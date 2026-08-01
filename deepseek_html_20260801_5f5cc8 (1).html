@@ -1,0 +1,3097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>糖友餐厅 · 升糖大冒险</title>
+    <style>
+        /* ===== 全局样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", system-ui, sans-serif;
+            background: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+        }
+        #app {
+            max-width: 420px;
+            width: 100%;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 40, 80, 0.15);
+            background: linear-gradient(145deg, #FFF8E7 0%, #FDEBD0 30%, #FADBD8 70%, #E8DAEF 100%);
+            min-height: 600px;
+            position: relative;
+        }
+
+        /* ===== 音乐控制按钮 ===== */
+        .music-btn {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 2px solid rgba(230, 126, 34, 0.15);
+            border-radius: 50%;
+            width: clamp(44px, 11vw, 52px);
+            height: clamp(44px, 11vw, 52px);
+            font-size: clamp(20px, 5vw, 24px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            color: #1A2A3A;
+        }
+        .music-btn:active { transform: scale(0.90); }
+        .music-btn.muted { opacity: 0.5; }
+
+        /* ===== 页面容器 ===== */
+        .page {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 14px 16px;
+            min-height: 560px;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .page.active { display: flex; }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .page-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* ===== 标题区域 ===== */
+        .title-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .page-title {
+            font-size: clamp(18px, 5vw, 22px);
+            font-weight: 700;
+            color: #1A2A3A;
+            text-align: center;
+            width: 100%;
+        }
+        .divider-icon {
+            font-size: 24px;
+            margin: 2px 0;
+            animation: bounceDivider 1.8s ease-in-out infinite;
+            display: inline-block;
+            opacity: 0.7;
+        }
+        @keyframes bounceDivider {
+            0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+            50% { transform: translateY(-6px) scale(1.12) rotate(6deg); }
+        }
+
+        .rules-box {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            padding: 10px 14px;
+            border: 2px solid rgba(230, 126, 34, 0.12);
+            margin-bottom: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        .rules-box .rules-text {
+            font-size: clamp(13px, 3.4vw, 15px);
+            color: #4A3F35;
+            line-height: 2;
+            font-weight: 500;
+        }
+        .rules-box .rules-text .highlight { color: #E67E22; font-weight: 700; }
+
+        .hint-box {
+            font-size: clamp(13px, 3.4vw, 15px);
+            font-weight: 600;
+            color: #5D4E37;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.40);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            padding: 3px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            margin-bottom: 3px;
+            line-height: 1.5;
+            width: 100%;
+        }
+        .hint-box .highlight { color: #E67E22; }
+        .hint-box .sub-hint {
+            font-size: clamp(10px, 2.6vw, 12px);
+            color: #B0A8A0;
+            display: block;
+            font-weight: 400;
+        }
+
+        .chance-hint {
+            font-size: clamp(13px, 3.4vw, 15px);
+            font-weight: 600;
+            color: #5D4E37;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            padding: 3px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            margin-bottom: 3px;
+            width: 100%;
+        }
+        .chance-hint .num { color: #E67E22; font-weight: 700; }
+        .chance-hint .num.zero { color: #E74C3C; animation: blink 0.8s infinite alternate; }
+        @keyframes blink { 0% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-row .btn-reset {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 0;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: #5D4E37;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 40px;
+            font-size: clamp(12px, 3.2vw, 14px);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-row .btn-reset:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.15); }
+        .btn-row .btn-start {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 0;
+            background: linear-gradient(135deg, #E67E22, #F39C12);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: clamp(12px, 3.2vw, 14px);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-row .btn-start:active { transform: scale(0.96); }
+        .btn-row .btn-start:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-row .btn-check {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 0;
+            background: linear-gradient(135deg, #2D9CDB, #2F80ED);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: clamp(12px, 3.2vw, 14px);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-row .btn-check:active { transform: scale(0.96); }
+        .btn-row .btn-check:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-row .btn-next {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 0;
+            background: linear-gradient(135deg, #27AE60, #2ECC71);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: clamp(13px, 3.4vw, 15px);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s;
+            display: none;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-row .btn-next:active { transform: scale(0.96); }
+        .btn-row .btn-next.show { display: block; }
+
+        .float-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .float-item {
+            position: absolute;
+            font-size: clamp(18px, 4.5vw, 28px);
+            opacity: 0.10;
+            animation: floatUp 8s ease-in-out infinite alternate;
+        }
+        .float-item:nth-child(1) { top: 3%; left: 3%; animation-duration: 7s; }
+        .float-item:nth-child(2) { top: 8%; right: 5%; animation-duration: 9s; animation-delay: 1s; font-size: clamp(14px, 3.5vw, 22px); }
+        .float-item:nth-child(3) { bottom: 20%; left: 2%; animation-duration: 10s; animation-delay: 2s; font-size: clamp(18px, 4.5vw, 28px); opacity: 0.07; }
+        .float-item:nth-child(4) { bottom: 30%; right: 4%; animation-duration: 7.5s; animation-delay: 0.5s; font-size: clamp(12px, 3vw, 18px); }
+        @keyframes floatUp { 0% { transform: translateY(0px) rotate(0deg) scale(1); } 100% { transform: translateY(-12px) rotate(5deg) scale(1.04); } }
+
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 2px;
+            flex-wrap: wrap;
+        }
+        .progress-dots .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.10);
+            transition: 0.3s;
+        }
+        .progress-dots .dot.active { background: #E67E22; transform: scale(1.2); }
+        .progress-dots .dot.done { background: #2D9CDB; }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(30, 20, 15, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 16px 18px;
+            border-radius: 20px;
+            color: white;
+            max-width: 300px;
+            width: 90%;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 999;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .toast.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .toast .toast-icon { font-size: 30px; display: block; margin-bottom: 2px; }
+        .toast h3 { font-size: 16px; margin-bottom: 2px; font-weight: 700; }
+        .toast p { font-size: 13px; line-height: 1.5; opacity: 0.92; margin-bottom: 8px; }
+        .toast .btn-close {
+            background: white;
+            border: none;
+            color: #1A2A3A;
+            padding: 5px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .toast .btn-close:active { transform: scale(0.95); }
+        .toast.success { background: rgba(39, 174, 96, 0.92); }
+        .toast.error { background: rgba(192, 57, 43, 0.92); }
+        .toast.info { background: rgba(41, 128, 185, 0.92); }
+        .toast.warning { background: rgba(243, 156, 18, 0.92); }
+
+        /* ===== 封面确认弹窗 ===== */
+        .cover-confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        .cover-confirm-overlay.show { display: flex; }
+        .cover-confirm-card {
+            background: white;
+            border-radius: 28px;
+            padding: 30px 24px 24px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+            animation: popIn 0.35s ease;
+        }
+        .cover-confirm-card .confirm-icon { font-size: 52px; display: block; margin-bottom: 6px; }
+        .cover-confirm-card .confirm-title { font-size: 22px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
+        .cover-confirm-card .confirm-desc { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 18px; }
+        .cover-confirm-card .btn-confirm {
+            background: linear-gradient(135deg, #E67E22, #F39C12);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.15s;
+            width: 100%;
+        }
+        .cover-confirm-card .btn-confirm:active { transform: scale(0.95); }
+        @keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* ===== 反馈弹窗 ===== */
+        .feedback-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.40);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .feedback-overlay.show { display: flex; }
+        .feedback-card {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 20px 20px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+            animation: popIn 0.3s ease;
+        }
+        .feedback-card .fb-icon { font-size: 48px; display: block; margin-bottom: 4px; }
+        .feedback-card .fb-title { font-size: 20px; font-weight: 700; color: #1A2A3A; margin-bottom: 4px; }
+        .feedback-card .fb-desc { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 14px; }
+        .feedback-card .btn-fb-close {
+            background: linear-gradient(135deg, #2D9CDB, #2F80ED);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 30px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.15s;
+        }
+        .feedback-card .btn-fb-close:active { transform: scale(0.95); }
+        .feedback-card .btn-fb-close.success { background: linear-gradient(135deg, #27AE60, #2ECC71); }
+        .feedback-card .btn-fb-close.error { background: linear-gradient(135deg, #E74C3C, #C0392B); }
+
+        /* ============================================================
+           第一关
+           ============================================================ */
+        .slots-area {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            padding: 10px 6px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            border: 2px dashed rgba(0, 0, 0, 0.06);
+            min-height: 70px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+        .slot {
+            flex: 0 0 calc(25% - 6px);
+            min-width: 56px;
+            max-width: 80px;
+            aspect-ratio: 1 / 1.1;
+            background: rgba(255, 255, 255, 0.50);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            border: 3px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(11px, 2.8vw, 13px);
+            font-weight: 600;
+            color: #AAB8C9;
+            transition: all 0.15s;
+            gap: 1px;
+            text-align: center;
+            padding: 2px;
+        }
+        .slot .index-label {
+            font-size: clamp(8px, 2vw, 10px);
+            font-weight: 400;
+            color: #B0C4DE;
+            background: rgba(255, 255, 255, 0.30);
+            padding: 0 6px;
+            border-radius: 20px;
+            line-height: 1.4;
+        }
+        .slot .slot-content { font-size: clamp(12px, 3vw, 15px); font-weight: 700; line-height: 1.2; }
+        .slot.filled { border-color: #E67E22; background: rgba(255, 255, 255, 0.70); color: #1A2A3A; }
+        .slot.correct { border-color: #27AE60; background: rgba(39, 174, 96, 0.10); color: #1E7E34; }
+        .slot.wrong { animation: shake 0.4s ease; border-color: #E74C3C; background: rgba(231, 76, 60, 0.10); color: #C0392B; }
+        .slot.reveal { border-color: #27AE60; background: rgba(39, 174, 96, 0.08); color: #1E7E34; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        .food-pool {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .food-item {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            padding: 8px 2px;
+            text-align: center;
+            border: 3px solid rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: all 0.15s;
+            touch-action: manipulation;
+        }
+        .food-item:active { transform: scale(0.93); }
+        .food-item .food-emoji { font-size: clamp(20px, 5vw, 28px); display: block; line-height: 1.2; }
+        .food-item .food-name { font-size: clamp(12px, 3vw, 14px); font-weight: 600; color: #1A2A3A; }
+        .food-item.used { opacity: 0.20; filter: grayscale(1); pointer-events: none; transform: scale(0.92); }
+        .food-item.selected { border-color: #E67E22; background: rgba(230, 126, 34, 0.10); box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.10); }
+
+        /* ============================================================
+           第二关 · 大火收汁
+           ============================================================ */
+        .cooking-game-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-display {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.40);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: clamp(14px, 3.6vw, 17px);
+            font-weight: 600;
+            color: #1A2A3A;
+        }
+        .score-display .score-num { color: #E67E22; font-weight: 800; }
+        .score-display .progress-num { color: #2D9CDB; font-weight: 800; }
+
+        .food-display {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.50);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 20px 10px;
+            text-align: center;
+            border: 3px solid rgba(230, 126, 34, 0.15);
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .food-display .food-emoji-big {
+            font-size: clamp(48px, 12vw, 64px);
+            display: block;
+            line-height: 1.2;
+        }
+        .food-display .food-name-big {
+            font-size: clamp(18px, 4.8vw, 24px);
+            font-weight: 700;
+            color: #1A2A3A;
+            margin-top: 2px;
+        }
+        .food-display .food-hint {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #888;
+            margin-top: 2px;
+        }
+        .food-display .waiting-text {
+            font-size: clamp(16px, 4vw, 20px);
+            color: #B0A8A0;
+        }
+
+        .cooking-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+        }
+        .cook-option {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            padding: 10px 4px;
+            text-align: center;
+            border: 3px solid rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.15s;
+            touch-action: manipulation;
+        }
+        .cook-option:active { transform: scale(0.90); }
+        .cook-option .cook-emoji { font-size: clamp(24px, 6vw, 34px); display: block; line-height: 1.2; }
+        .cook-option .cook-label { font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; color: #1A2A3A; }
+        .cook-option .cook-sub { font-size: clamp(8px, 2vw, 10px); color: #888; }
+        .cook-option.correct-hit { border-color: #27AE60; background: rgba(39, 174, 96, 0.20); transform: scale(0.95); }
+        .cook-option.wrong-hit { border-color: #E74C3C; background: rgba(231, 76, 60, 0.20); transform: scale(0.95); }
+        .cook-option.disabled { pointer-events: none; opacity: 0.5; }
+        .cook-option.reveal-correct { border-color: #27AE60; background: rgba(39, 174, 96, 0.12); }
+        .cook-option.reveal-wrong { border-color: #E74C3C; background: rgba(231, 76, 60, 0.12); }
+
+        .cooking-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.30);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .cooking-progress .bar {
+            height: 100%;
+            background: linear-gradient(90deg, #E67E22, #F39C12);
+            border-radius: 10px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        /* ============================================================
+           第三关 · 零食大侦探
+           ============================================================ */
+        .snack-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .snack-card {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 16px;
+            padding: 14px 6px;
+            text-align: center;
+            border: 3px solid rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            transition: all 0.15s;
+            touch-action: manipulation;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .snack-card:active { transform: scale(0.95); }
+        .snack-card .snack-emoji { font-size: clamp(32px, 8vw, 42px); display: block; line-height: 1.2; }
+        .snack-card .snack-name { font-size: clamp(13px, 3.4vw, 16px); font-weight: 600; color: #1A2A3A; margin-top: 4px; }
+        .snack-card.selected { border-color: #E67E22; background: rgba(230, 126, 34, 0.12); box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.10); }
+        .snack-card.used { opacity: 0.30; filter: grayscale(1); pointer-events: none; transform: scale(0.92); }
+        .snack-card.correct-reveal { border-color: #27AE60; background: rgba(39, 174, 96, 0.15); }
+        .snack-card.wrong-reveal { border-color: #E74C3C; background: rgba(231, 76, 60, 0.15); }
+        .snack-card.miss-reveal { border-color: #F39C12; background: rgba(243, 156, 18, 0.10); }
+        .snack-card.disabled { pointer-events: none; opacity: 0.6; }
+
+        .snack-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 4px 8px;
+            font-size: clamp(13px, 3.4vw, 15px);
+            font-weight: 500;
+            color: #5D4E37;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            margin-bottom: 4px;
+        }
+        .snack-stats .count { color: #E67E22; font-weight: 700; }
+
+        /* ============================================================
+           第四关 · 手掌配餐
+           ============================================================ */
+        .food-slots {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .food-slot {
+            background: rgba(255, 255, 255, 0.40);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            border: 3px dashed rgba(0, 0, 0, 0.08);
+            min-height: 72px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            position: relative;
+            padding: 6px 4px;
+        }
+        .food-slot .food-icon-fixed {
+            font-size: clamp(22px, 5.5vw, 30px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .food-slot .food-icon-fixed .food-label { font-size: clamp(12px, 3vw, 14px); font-weight: 700; color: #1A2A3A; }
+        .food-slot .food-icon-fixed .food-sub { font-size: clamp(9px, 2.2vw, 11px); color: #888; font-weight: 400; }
+        .food-slot .hand-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.70);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .food-slot .hand-overlay .slot-hand { font-size: clamp(28px, 7vw, 40px); display: block; line-height: 1.2; }
+        .food-slot .hand-overlay .slot-hand-name { font-size: clamp(13px, 3.4vw, 16px); font-weight: 700; color: #1A2A3A; }
+        .food-slot.filled .hand-overlay { display: flex; }
+        .food-slot.filled .food-icon-fixed { opacity: 0.4; }
+        .food-slot.filled { border-color: #2D9CDB; border-style: solid; background: rgba(45, 156, 219, 0.06); }
+        .food-slot.correct { border-color: #27AE60; background: rgba(39, 174, 96, 0.10); }
+        .food-slot.correct .hand-overlay { background: rgba(39, 174, 96, 0.12); }
+        .food-slot.wrong { border-color: #E74C3C; background: rgba(231, 76, 60, 0.10); animation: shake 0.4s ease; }
+        .food-slot.wrong .hand-overlay { background: rgba(231, 76, 60, 0.12); }
+        .food-slot.reveal-correct { border-color: #27AE60; background: rgba(39, 174, 96, 0.10); }
+        .food-slot.reveal-correct .hand-overlay { background: rgba(39, 174, 96, 0.12); }
+        .food-slot .slot-remove {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 20;
+            pointer-events: auto;
+            touch-action: manipulation;
+        }
+        .food-slot.filled .slot-remove { display: flex; }
+
+        .hand-pool {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .hand-item {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 12px;
+            padding: 8px 4px;
+            text-align: center;
+            border: 3px solid rgba(0, 0, 0, 0.04);
+            cursor: grab;
+            transition: all 0.15s;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+        }
+        .hand-item:active { cursor: grabbing; transform: scale(0.95); }
+        .hand-item .hand-emoji { font-size: clamp(24px, 6vw, 34px); display: block; line-height: 1.2; }
+        .hand-item .hand-name { font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; color: #1A2A3A; }
+        .hand-item.dragging { opacity: 0.4; transform: scale(0.9); }
+        .hand-item.used { opacity: 0.15; filter: grayscale(1); pointer-events: none; transform: scale(0.92); }
+        .drag-clone {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 14px;
+            padding: 10px 12px;
+            text-align: center;
+            border: 3px solid #E67E22;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            transform: scale(1.08) translate(-50%, -50%);
+            min-width: 70px;
+        }
+        .drag-clone .hand-emoji { font-size: 32px; display: block; line-height: 1.2; }
+        .drag-clone .hand-name { font-size: 13px; font-weight: 600; color: #1A2A3A; }
+
+        /* ============================================================
+           第五关 · 低血糖救援
+           ============================================================ */
+        .question-area {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.30);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 16px;
+            padding: 10px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 6px;
+        }
+        .question-area .q-text {
+            font-size: clamp(15px, 4vw, 18px);
+            font-weight: 600;
+            color: #1A2A3A;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .option-item {
+            background: rgba(255, 255, 255, 0.50);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 12px;
+            padding: 10px 4px;
+            text-align: center;
+            border: 3px solid rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            touch-action: manipulation;
+        }
+        .option-item:active { transform: scale(0.95); }
+        .option-item .opt-emoji { font-size: clamp(28px, 7vw, 38px); display: block; line-height: 1.2; }
+        .option-item .opt-label { font-size: clamp(13px, 3.4vw, 16px); font-weight: 600; color: #1A2A3A; margin-top: 2px; }
+        .option-item .opt-desc { display: none; }
+        .option-item.correct-reveal { border-color: #27AE60; background: rgba(39, 174, 96, 0.12); }
+        .option-item.wrong-reveal { border-color: #E74C3C; background: rgba(231, 76, 60, 0.12); }
+        .option-item.disabled { pointer-events: none; opacity: 0.6; }
+
+        .progress-text {
+            font-size: clamp(13px, 3.4vw, 15px);
+            font-weight: 600;
+            color: #5D4E37;
+            text-align: center;
+            width: 100%;
+            margin-bottom: 3px;
+        }
+        .progress-text .num { color: #E67E22; font-weight: 700; }
+
+        /* ============================================================
+           结算页
+           ============================================================ */
+        .score-card {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 16px 14px 12px;
+            border: 2px solid rgba(230, 126, 34, 0.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .score-card .medal { font-size: clamp(48px, 12vw, 64px); display: block; margin-bottom: 2px; }
+        .score-card .stars {
+            font-size: clamp(28px, 7vw, 40px);
+            letter-spacing: 4px;
+            margin-bottom: 2px;
+            color: #F39C12;
+        }
+        .score-card .title-name { font-size: clamp(20px, 5vw, 26px); font-weight: 800; color: #1A2A3A; margin-bottom: 2px; }
+        .score-card .title-sub { font-size: clamp(13px, 3.4vw, 15px); color: #888; font-weight: 400; }
+
+        .level-list {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.30);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 16px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            margin-bottom: 10px;
+        }
+        .level-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 2px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            font-size: clamp(13px, 3.4vw, 15px);
+        }
+        .level-item:last-child { border-bottom: none; }
+        .level-item .level-left { display: flex; align-items: center; gap: 6px; }
+        .level-item .level-num { font-weight: 700; color: #E67E22; min-width: 18px; }
+        .level-item .level-name { font-weight: 500; color: #1A2A3A; }
+        .level-item .level-status { font-weight: 700; font-size: clamp(13px, 3.4vw, 16px); color: #27AE60; }
+
+        .comment-box {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.30);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .comment-box .comment-text { font-size: clamp(14px, 3.6vw, 16px); line-height: 1.7; color: #5D4E37; }
+        .comment-box .comment-text .highlight { color: #E67E22; font-weight: 700; }
+
+        .btn-full {
+            width: 100%;
+            padding: 12px 0;
+            background: linear-gradient(135deg, #E67E22, #F39C12);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: clamp(16px, 4.2vw, 18px);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-full:active { transform: scale(0.96); }
+
+        /* ===== 小贴士卡片 ===== */
+        .card-container {
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 380px;
+            margin-bottom: 6px;
+            touch-action: pan-y;
+        }
+        .card-wrapper {
+            width: 100%;
+            max-width: 380px;
+            position: absolute;
+            opacity: 0;
+            transform: scale(0.85) translateX(30px);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            touch-action: pan-y;
+        }
+        .card-wrapper.active {
+            opacity: 1;
+            transform: scale(1) translateX(0);
+            pointer-events: auto;
+            position: relative;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 18px 16px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 6px 32px rgba(0, 0, 0, 0.06);
+            min-height: 340px;
+            display: flex;
+            flex-direction: column;
+        }
+        .card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .card .card-number {
+            background: linear-gradient(135deg, #E67E22, #F39C12);
+            color: white;
+            border-radius: 50%;
+            width: clamp(32px, 8vw, 38px);
+            height: clamp(32px, 8vw, 38px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(14px, 3.6vw, 17px);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .card .card-title {
+            font-size: clamp(18px, 4.8vw, 22px);
+            font-weight: 700;
+            color: #1A2A3A;
+            flex: 1;
+        }
+        .card .card-title .emoji { font-size: clamp(18px, 4.8vw, 24px); margin-right: 4px; }
+        .card .divider { height: 2px; background: linear-gradient(90deg, #E67E22, #F39C12, transparent); margin: 3px 0 8px; border-radius: 10px; }
+        .card .card-section { margin-bottom: 6px; }
+        .card .card-section .section-label { font-size: clamp(12px, 3vw, 14px); font-weight: 600; color: #E67E22; letter-spacing: 1px; margin-bottom: 2px; }
+        .card .card-section .section-content { font-size: clamp(17px, 4.5vw, 22px); font-weight: 700; color: #1A2A3A; line-height: 1.6; padding: 6px 12px; background: rgba(230, 126, 34, 0.06); border-radius: 10px; border-left: 4px solid #E67E22; }
+        .card .point-list { list-style: none; padding: 0; margin: 2px 0 0; }
+        .card .point-list li { font-size: clamp(14px, 3.6vw, 17px); line-height: 1.7; color: #2C3E50; padding: 3px 0; display: flex; align-items: flex-start; gap: 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.03); }
+        .card .point-list li:last-child { border-bottom: none; }
+        .card .point-list li .check { color: #27AE60; font-weight: 700; flex-shrink: 0; font-size: clamp(14px, 3.6vw, 18px); }
+        .card .card-footer { margin-top: auto; padding-top: 8px; font-size: clamp(12px, 3vw, 14px); color: #B0A8A0; text-align: center; border-top: 1px solid rgba(0, 0, 0, 0.04); }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .controls .arrow {
+            width: clamp(40px, 10vw, 48px);
+            height: clamp(40px, 10vw, 48px);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.50);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 5vw, 26px);
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            color: #5D4E37;
+            touch-action: manipulation;
+        }
+        .controls .arrow:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.25); }
+        .controls .arrow.disabled { opacity: 0.2; pointer-events: none; }
+        .controls .dots { display: flex; gap: 6px; flex: 1; justify-content: center; }
+        .controls .dots .dot { width: clamp(8px, 2vw, 10px); height: clamp(8px, 2vw, 10px); border-radius: 50%; background: rgba(0, 0, 0, 0.10); transition: all 0.3s; }
+        .controls .dots .dot.active { background: #E67E22; transform: scale(1.4); }
+
+        .bottom-area {
+            width: 100%;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .bottom-tip {
+            text-align: center;
+            font-size: clamp(11px, 2.8vw, 13px);
+            color: #AAB8C9;
+            margin-top: 2px;
+        }
+        .page-sub {
+            font-size: clamp(13px, 3.4vw, 15px);
+            color: #888;
+            text-align: center;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        /* ===== 封面 ===== */
+        .cover-icon { font-size: clamp(56px, 14vw, 76px); margin-bottom: 2px; animation: bounceIcon 2s ease-in-out infinite; }
+        @keyframes bounceIcon { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.04); } }
+        .cover-title { font-size: clamp(24px, 6.5vw, 34px); font-weight: 800; color: #1A2A3A; text-align: center; line-height: 1.2; }
+        .cover-title .highlight { background: linear-gradient(135deg, #E67E22, #F39C12); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cover-title .deco { font-size: clamp(20px, 5vw, 28px); display: inline-block; }
+        .cover-poem { margin: 6px 0 6px; text-align: center; font-size: clamp(15px, 4vw, 18px); color: #5D4E37; line-height: 1.7; background: rgba(255, 255, 255, 0.4); padding: 6px 14px; border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.3); width: 100%; }
+        .cover-poem .line-big { font-size: clamp(17px, 4.5vw, 22px); font-weight: 700; color: #2C3E50; }
+        .cover-poem .line-question { font-size: clamp(16px, 4.2vw, 20px); font-weight: 600; color: #2C3E50; }
+        .cover-poem .line-question .q { color: #E67E22; }
+        .cover-footer { text-align: center; font-size: clamp(11px, 2.8vw, 13px); color: #7F6B5C; margin-top: 10px; opacity: 0.7; background: rgba(255, 255, 255, 0.2); padding: 4px 14px; border-radius: 30px; }
+        .divider-cute { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; width: 60%; }
+        .divider-cute .line { flex: 1; height: 2px; background: linear-gradient(90deg, transparent, #E67E22, #F39C12, transparent); }
+        .divider-cute .dot { color: #E67E22; font-size: 14px; animation: pulseDot 1.5s ease-in-out infinite; }
+        @keyframes pulseDot { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.4); opacity: 1; } }
+
+        .btn-start {
+            width: 100%;
+            padding: 18px 0;
+            border: none;
+            border-radius: 60px;
+            font-size: clamp(22px, 5.5vw, 28px);
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            touch-action: manipulation;
+            background: linear-gradient(135deg, #F7971E, #FFD200);
+            color: #1A2A3A;
+            box-shadow: 0 6px 28px rgba(247, 151, 30, 0.40);
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            animation: breatheBtn 2.4s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-start:active { transform: scale(0.93); box-shadow: 0 3px 16px rgba(247, 151, 30, 0.25); }
+        @keyframes breatheBtn { 0%, 100% { transform: scale(1); box-shadow: 0 6px 28px rgba(247, 151, 30, 0.35); } 50% { transform: scale(1.02); box-shadow: 0 10px 44px rgba(247, 151, 30, 0.55); } }
+        .btn-start .btn-emoji { display: inline-block; animation: winkEmoji 1.8s ease-in-out infinite; font-size: clamp(20px, 5vw, 26px); flex-shrink: 0; }
+        .btn-start .btn-emoji.right { animation: winkEmoji 1.8s ease-in-out infinite reverse; }
+        @keyframes winkEmoji { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.15) rotate(-5deg); } }
+        .btn-start .btn-text { flex-shrink: 0; }
+        .btn-start::after {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -60%;
+            width: 220%;
+            height: 220%;
+            background: radial-gradient(circle, rgba(255,255,255,0.20) 0%, transparent 60%);
+            animation: shimmerBtn 3.5s infinite;
+        }
+        @keyframes shimmerBtn { 0% { transform: translateX(-100%) rotate(25deg); } 100% { transform: translateX(100%) rotate(25deg); } }
+
+        @media (max-width: 380px) {
+            .slot { min-width: 48px; }
+            .food-item .food-emoji { font-size: 20px; }
+            .option-item { min-height: 50px; }
+            .option-item .opt-emoji { font-size: 24px; }
+            .food-slot { min-height: 60px; }
+            .hand-item { min-height: 50px; }
+            .hand-item .hand-emoji { font-size: 26px; }
+            .card { padding: 14px 12px 12px; min-height: 300px; }
+            .card .card-title { font-size: 17px; }
+            .card .card-section .section-content { font-size: 16px; }
+            .card .point-list li { font-size: 14px; }
+            .controls .arrow { width: 42px; height: 42px; font-size: 20px; }
+            .divider-icon { font-size: 20px; }
+            .cover-icon { font-size: 48px; }
+            .cover-title { font-size: 24px; }
+            .cover-poem { font-size: 14px; padding: 4px 10px; }
+            .cover-poem .line-big { font-size: 16px; }
+            .cover-poem .line-question { font-size: 15px; }
+            .btn-start { font-size: 20px; padding: 16px 0; }
+            .btn-start .btn-emoji { font-size: 18px; }
+            .cook-option .cook-emoji { font-size: 22px; }
+            .food-display .food-emoji-big { font-size: 40px; }
+            .snack-card { min-height: 70px; padding: 10px 4px; }
+            .snack-card .snack-emoji { font-size: 28px; }
+        }
+        @media (max-width: 350px) {
+            .slot { min-width: 42px; }
+            .slot .slot-content { font-size: 11px; }
+            .cooking-options { grid-template-columns: repeat(2, 1fr); }
+            .snack-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+
+        <!-- ===== 音乐控制按钮 ===== -->
+        <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🔊</button>
+
+        <!-- ===== Toast ===== -->
+        <div class="toast" id="toast">
+            <span class="toast-icon" id="toastIcon">📢</span>
+            <h3 id="toastTitle">提示</h3>
+            <p id="toastDesc">内容</p>
+            <button class="btn-close" id="toastBtn">知道了</button>
+        </div>
+
+        <!-- ===== 封面确认弹窗 ===== -->
+        <div class="cover-confirm-overlay" id="coverConfirm">
+            <div class="cover-confirm-card">
+                <span class="confirm-icon">🍚</span>
+                <div class="confirm-title">准备好了吗？</div>
+                <div class="confirm-desc">&nbsp;</div>
+                <button class="btn-confirm" onclick="confirmStart()">知道了，开始闯关 🚀</button>
+            </div>
+        </div>
+
+        <!-- ===== 反馈弹窗 ===== -->
+        <div class="feedback-overlay" id="feedbackOverlay">
+            <div class="feedback-card">
+                <span class="fb-icon" id="fbIcon">✅</span>
+                <div class="fb-title" id="fbTitle">回答正确！</div>
+                <div class="fb-desc" id="fbDesc">解析内容</div>
+                <button class="btn-fb-close" id="fbBtn">知道了</button>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P1 封面 -->
+        <!-- ============================================================ -->
+        <div class="page active" id="p1">
+            <div class="float-bg">
+                <span class="float-item">🥣</span><span class="float-item">🍚</span>
+                <span class="float-item">🥬</span><span class="float-item">🍗</span>
+                <span class="float-item">🌾</span><span class="float-item">💚</span>
+                <span class="float-item">🥗</span><span class="float-item">⭐</span>
+            </div>
+            <div class="page-content">
+                <div class="cover-icon">👨‍🍳</div>
+                <div class="cover-title">
+                    <span class="deco">✨</span> 糖友餐厅
+                    <span class="highlight">升糖大冒险</span>
+                    <span class="deco">✨</span>
+                </div>
+                <div class="cover-poem">
+                    ❤️ 亲爱的家人<br>
+                    <span class="line-big">你的每一次选择</span><br>
+                    <span class="line-big">都在守护最爱的人</span><br>
+                    <span style="font-size:clamp(14px,3.6vw,17px);color:#5D4E37;">——</span><br>
+                    <span class="line-question">🤔 你给糖友准备的早餐<br><span class="q">真的吃对了吗？</span></span>
+                </div>
+                <div class="divider-cute">
+                    <span class="line"></span>
+                    <span class="dot">✦</span>
+                    <span class="line"></span>
+                </div>
+                <button class="btn-start" onclick="showCoverConfirm()">
+                    <span class="btn-emoji">🚀</span>
+                    <span class="btn-text">我要闯关</span>
+                    <span class="btn-emoji right">🚀</span>
+                </button>
+                <div class="cover-footer">👨‍👩‍👧‍👦 和家人一起，科学吃饭，平稳血糖 ❤️</div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P3 第一关 · 进餐排序 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p3">
+            <div class="float-bg">
+                <span class="float-item">🥣</span><span class="float-item">🍚</span>
+                <span class="float-item">🥬</span><span class="float-item">🍗</span>
+                <span class="float-item">🌾</span><span class="float-item">💚</span>
+            </div>
+            <div class="page-content">
+                <div class="progress-dots">
+                    <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="title-section">
+                    <div class="page-title">🥣 第一关 · 进餐排序</div>
+                    <span class="divider-icon">🍽️</span>
+                </div>
+                <div class="rules-box" id="rulesBox1">
+                    <div class="rules-text">📖 <span class="highlight">游戏规则</span><br>点击下方食物，它会 <span class="highlight">自动按顺序</span> 填入上方方格</div>
+                </div>
+                <div class="hint-box">
+                    💡 记住顺序，把食物放到正确的位置
+                    <span class="sub-hint">点击食物自动填入，不用再点序号！</span>
+                </div>
+                <div class="chance-hint" id="chanceHint1">
+                    🎯 剩余尝试机会：<span class="num" id="chanceNum1">3</span> 次
+                </div>
+                <div class="slots-area" id="slotsArea">
+                    <div class="slot" data-index="0"><span class="index-label">①先吃</span><span class="slot-content">？</span></div>
+                    <div class="slot" data-index="1"><span class="index-label">②再吃</span><span class="slot-content">？</span></div>
+                    <div class="slot" data-index="2"><span class="index-label">③然后</span><span class="slot-content">？</span></div>
+                    <div class="slot" data-index="3"><span class="index-label">④最后</span><span class="slot-content">？</span></div>
+                </div>
+                <div class="food-pool" id="foodPool">
+                    <div class="food-item" data-name="汤"><span class="food-emoji">🥣</span><span class="food-name">汤</span></div>
+                    <div class="food-item" data-name="蔬菜"><span class="food-emoji">🥬</span><span class="food-name">蔬菜</span></div>
+                    <div class="food-item" data-name="肉"><span class="food-emoji">🍗</span><span class="food-name">肉</span></div>
+                    <div class="food-item" data-name="米饭"><span class="food-emoji">🍚</span><span class="food-name">米饭</span></div>
+                </div>
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="resetLevel1()">🔄 重新排列</button>
+                        <button class="btn-next" id="btnNextLevel1" onclick="goToPage('p7')">进入第二关 ➜</button>
+                    </div>
+                    <div class="bottom-tip">💡 点击食物 → 自动填入下一个空位</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P7 第二关 · 大火收汁 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p7">
+            <div class="float-bg">
+                <span class="float-item">🍳</span><span class="float-item">🔥</span>
+                <span class="float-item">🥘</span><span class="float-item">♨️</span>
+                <span class="float-item">🐟</span><span class="float-item">🥚</span>
+                <span class="float-item">🥩</span><span class="float-item">⭐</span>
+            </div>
+            <div class="page-content">
+                <div class="progress-dots">
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot active"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="title-section">
+                    <div class="page-title">🔥 第二关 · 大火收汁</div>
+                    <span class="divider-icon">🍳</span>
+                </div>
+                <div class="rules-box" id="rulesBox2">
+                    <div class="rules-text">📖 <span class="highlight">游戏规则</span><br>共 <span class="highlight">4种食物</span>，选择正确的烹饪方式</div>
+                </div>
+                <div class="hint-box">
+                    💡 慢慢选，选出 <span class="highlight">✓ 正确的烹饪方式</span>
+                    <span class="sub-hint">答对3题（75%）即可通关</span>
+                </div>
+
+                <div class="cooking-game-area">
+                    <div class="score-display">
+                        <span>📦 <span class="progress-num" id="cookProgressText">1/4</span></span>
+                        <span>✅ 正确：<span class="score-num" id="cookScore">0</span></span>
+                    </div>
+
+                    <div class="food-display" id="cookFoodDisplay">
+                        <span class="waiting-text">👆 点击「开始烹饪」</span>
+                    </div>
+
+                    <div class="cooking-options" id="cookOptions">
+                        <div class="cook-option disabled" data-method="蒸"><span class="cook-emoji">♨️</span><span class="cook-label">蒸</span><span class="cook-sub">清淡</span></div>
+                        <div class="cook-option disabled" data-method="白灼"><span class="cook-emoji">🫧</span><span class="cook-label">白灼</span><span class="cook-sub">清爽</span></div>
+                        <div class="cook-option disabled" data-method="炒"><span class="cook-emoji">🍳</span><span class="cook-label">炒</span><span class="cook-sub">香脆</span></div>
+                        <div class="cook-option disabled" data-method="炖"><span class="cook-emoji">🥘</span><span class="cook-label">炖</span><span class="cook-sub">软烂</span></div>
+                    </div>
+
+                    <div class="cooking-progress"><div class="bar" id="cookProgressBar" style="width:0%"></div></div>
+                </div>
+
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="resetLevel2()">🔄 重来</button>
+                        <button class="btn-start" id="startLevel2Btn" onclick="startLevel2()">⏱️ 开始烹饪</button>
+                        <button class="btn-next" id="btnNextLevel2" onclick="goToPage('p16')">进入第三关 ➜</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P16 第三关 · 零食大侦探 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p16">
+            <div class="float-bg">
+                <span class="float-item">🍪</span><span class="float-item">🥛</span>
+                <span class="float-item">🥜</span><span class="float-item">🍎</span>
+                <span class="float-item">🥒</span><span class="float-item">💚</span>
+                <span class="float-item">🧃</span><span class="float-item">⭐</span>
+            </div>
+            <div class="page-content">
+                <div class="progress-dots">
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot done"></span><span class="dot active"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="title-section">
+                    <div class="page-title">🍬 第三关 · 零食大侦探</div>
+                    <span class="divider-icon">🔍</span>
+                </div>
+                <div class="rules-box" id="rulesBox3">
+                    <div class="rules-text">📖 <span class="highlight">游戏规则</span><br>从6种零食中选出 <span class="highlight">适合加餐的4种</span>，点击选中</div>
+                </div>
+                <div class="hint-box">
+                    💡 选出 <span class="highlight">4种</span> 适合糖友加餐的零食
+                    <span class="sub-hint">选好后点击「看看选对了没」</span>
+                </div>
+                <div class="chance-hint" id="chanceHint3">
+                    🎯 剩余机会：<span class="num" id="chanceNum3">3</span> 次
+                </div>
+
+                <div class="snack-grid" id="snackGrid3"></div>
+
+                <div class="snack-stats">
+                    <span>📦 共 <span id="totalCount3">6</span> 种</span>
+                    <span>✅ 已选 <span class="count" id="checkedCount3">0</span> 种</span>
+                </div>
+
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="resetLevel3()">🔄 重选</button>
+                        <button class="btn-start" id="startLevel3Btn" onclick="startLevel3()">⏱️ 开始挑选</button>
+                        <button class="btn-check" id="checkLevel3Btn" disabled onclick="checkLevel3()">✅ 看看选对了没</button>
+                        <button class="btn-next" id="btnNextLevel3" onclick="goToPage('p5')">进入第四关 ➜</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P5 第四关 · 手掌配餐 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p5">
+            <div class="float-bg">
+                <span class="float-item">🥩</span><span class="float-item">🍚</span>
+                <span class="float-item">🥬</span><span class="float-item">🧈</span>
+                <span class="float-item">🖐️</span><span class="float-item">💚</span>
+                <span class="float-item">👊</span><span class="float-item">⭐</span>
+            </div>
+            <div class="page-content">
+                <div class="progress-dots">
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot active"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="title-section">
+                    <div class="page-title">🍽️ 第四关 · 手掌配餐</div>
+                    <span class="divider-icon">🤚</span>
+                </div>
+                <div class="rules-box" id="rulesBox4">
+                    <div class="rules-text">📖 <span class="highlight">游戏规则</span><br>将下方 <span class="highlight">手掌</span> 拖拽到对应的食物槽位</div>
+                </div>
+                <div class="hint-box">
+                    💡 每种食物都对应一个<span class="highlight">手掌部位</span>
+                    <span class="sub-hint">拖拽下方手掌到对应的食物槽位</span>
+                </div>
+                <div class="chance-hint" id="chanceHint4">
+                    🎯 剩余尝试机会：<span class="num" id="chanceNum4">3</span> 次
+                </div>
+                <div class="food-slots" id="foodSlots4"></div>
+                <div class="hand-pool" id="handPool4"></div>
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="resetLevel4()">🔄 重来</button>
+                        <button class="btn-start" id="startLevel4Btn" onclick="startLevel4()">⏱️ 开始配餐</button>
+                        <button class="btn-check" id="checkLevel4Btn" disabled onclick="checkLevel4()">✅ 验证匹配</button>
+                        <button class="btn-next" id="btnNextLevel4" onclick="goToPage('p6')">进入第五关 ➜</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P6 第五关 · 低血糖救援 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p6">
+            <div class="float-bg">
+                <span class="float-item">🚨</span><span class="float-item">🍫</span>
+                <span class="float-item">🥤</span><span class="float-item">🚑</span>
+                <span class="float-item">😰</span><span class="float-item">💚</span>
+                <span class="float-item">⏱️</span><span class="float-item">⭐</span>
+            </div>
+            <div class="page-content">
+                <div class="progress-dots">
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot done"></span><span class="dot done"></span>
+                    <span class="dot done"></span><span class="dot active"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span>
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="title-section">
+                    <div class="page-title">🚨 第五关 · 低血糖救援</div>
+                    <span class="divider-icon">🆘</span>
+                </div>
+                <div class="rules-box" id="rulesBox5">
+                    <div class="rules-text">📖 <span class="highlight">游戏规则</span><br>共 <span class="highlight">4题</span>，每题选完后点击 <span class="highlight">“知道了”</span> 进入下一题</div>
+                </div>
+                <div class="chance-hint" id="chanceHint5">
+                    🎯 剩余机会：<span class="num" id="chanceNum5">3</span> 次
+                </div>
+                <div class="progress-text">📝 第 <span class="num" id="currentQNum">1</span> / 4 题</div>
+                <div class="question-area" id="questionArea5"></div>
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="resetLevel5()">🔄 重来</button>
+                        <button class="btn-start" id="startLevel5Btn" onclick="startLevel5()">⏱️ 开始救援</button>
+                        <button class="btn-next" id="btnNextLevel5" onclick="goToPage('p13')">进入结算 ➜</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P13 结算页 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p13">
+            <div class="float-bg">
+                <span class="float-item">🏆</span><span class="float-item">⭐</span>
+                <span class="float-item">👑</span><span class="float-item">💚</span>
+                <span class="float-item">🥇</span><span class="float-item">🌟</span>
+                <span class="float-item">🎉</span><span class="float-item">✨</span>
+            </div>
+            <div class="page-content">
+                <div class="title-section">
+                    <div class="page-title">🏆 你的控糖成绩单</div>
+                    <span class="divider-icon">📊</span>
+                </div>
+                <div class="score-card" id="scoreCard">
+                    <span class="medal" id="medalEmoji">🏆</span>
+                    <div class="stars" id="starsDisplay">⭐⭐⭐⭐⭐</div>
+                    <div class="title-name" id="titleName">控糖达人</div>
+                    <div class="title-sub">已掌握 <span id="totalPassed">0</span> / 5 关</div>
+                </div>
+                <div class="level-list" id="levelList"></div>
+                <div class="comment-box">
+                    <div class="comment-text" id="commentText">继续加油，掌握更多控糖知识！</div>
+                </div>
+                <div class="bottom-area">
+                    <div class="btn-row">
+                        <button class="btn-reset" onclick="shareResult()" style="flex:1;min-width:60px;padding:12px 0;background:rgba(255,255,255,0.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#5D4E37;border:1px solid rgba(255,255,255,0.25);border-radius:40px;font-size:clamp(14px,3.6vw,16px);font-weight:600;cursor:pointer;transition:transform 0.15s;text-align:center;touch-action:manipulation;">📤 分享给家人</button>
+                        <button class="btn-primary" onclick="goToPage('p14')" style="flex:1;min-width:60px;padding:12px 0;background:linear-gradient(135deg,#2D9CDB,#2F80ED);color:white;border:none;border-radius:40px;font-size:clamp(14px,3.6vw,16px);font-weight:700;cursor:pointer;transition:transform 0.15s;text-align:center;touch-action:manipulation;">📖 速记小贴士 ➜</button>
+                    </div>
+                    <button class="btn-full" onclick="resetGame()">🔄 再玩一次</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- P14 速记小贴士 -->
+        <!-- ============================================================ -->
+        <div class="page" id="p14">
+            <div class="float-bg">
+                <span class="float-item">📖</span><span class="float-item">⭐</span>
+                <span class="float-item">💡</span><span class="float-item">💚</span>
+                <span class="float-item">📝</span><span class="float-item">🌟</span>
+                <span class="float-item">🎯</span><span class="float-item">✨</span>
+            </div>
+            <div class="page-content">
+                <div class="title-section">
+                    <div class="page-title">📖 糖友速记小贴士</div>
+                    <span class="divider-icon">💡</span>
+                </div>
+                <div class="page-sub">👆 左右滑动查看 5 张知识卡片</div>
+                <div class="card-container" id="cardContainerTips"></div>
+                <div class="controls">
+                    <div class="arrow" id="prevArrowTips" onclick="prevCardTips()">‹</div>
+                    <div class="dots" id="dotsContainerTips"></div>
+                    <div class="arrow" id="nextArrowTips" onclick="nextCardTips()">›</div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-secondary" onclick="shareTips()" style="flex:1;min-width:60px;padding:12px 0;background:rgba(255,255,255,0.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#5D4E37;border:1px solid rgba(255,255,255,0.25);border-radius:40px;font-size:clamp(14px,3.6vw,16px);font-weight:600;cursor:pointer;transition:transform 0.15s;text-align:center;touch-action:manipulation;">📤 分享</button>
+                    <button class="btn-primary" onclick="goToPage('p1')" style="flex:1;min-width:60px;padding:12px 0;background:linear-gradient(135deg,#2D9CDB,#2F80ED);color:white;border:none;border-radius:40px;font-size:clamp(14px,3.6vw,16px);font-weight:700;cursor:pointer;transition:transform 0.15s;text-align:center;touch-action:manipulation;">🏠 返回首页</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================================================================
+        // 🎵 背景音乐系统
+        // ================================================================
+        let audioCtx = null;
+        let musicInterval = null;
+        let isMusicPlaying = false;
+        let isMusicMuted = false;
+
+        function initAudio() {
+            if (audioCtx) return audioCtx;
+            try {
+                audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                return audioCtx;
+            } catch (e) { return null; }
+        }
+
+        function playNote(frequency, duration, volume = 0.08, type = 'sine', delay = 0) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = frequency;
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + duration);
+            } catch (e) {}
+        }
+
+        function playMelody() {
+            if (!audioCtx || isMusicMuted) return;
+            const notes = [
+                { freq: 523, dur: 0.12, vol: 0.06 }, { freq: 587, dur: 0.12, vol: 0.06 },
+                { freq: 659, dur: 0.12, vol: 0.06 }, { freq: 587, dur: 0.12, vol: 0.06 },
+                { freq: 659, dur: 0.12, vol: 0.06 }, { freq: 784, dur: 0.18, vol: 0.07 },
+                { freq: 659, dur: 0.12, vol: 0.06 }, { freq: 587, dur: 0.12, vol: 0.06 },
+                { freq: 523, dur: 0.18, vol: 0.07 }, { freq: 659, dur: 0.12, vol: 0.06 },
+                { freq: 784, dur: 0.12, vol: 0.06 }, { freq: 880, dur: 0.20, vol: 0.08 }
+            ];
+            let time = 0;
+            notes.forEach(n => { playNote(n.freq, n.dur, n.vol, 'sine', time);
+                time += n.dur + 0.02; });
+        }
+
+        function startMusic() {
+            const ctx = initAudio();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') { ctx.resume().then(() => { isMusicPlaying = true;
+                    playLoop(); }).catch(() => {}); return; }
+            if (isMusicPlaying) return;
+            isMusicPlaying = true;
+            playLoop();
+        }
+
+        function playLoop() {
+            if (!isMusicPlaying || isMusicMuted) return;
+            playMelody();
+            if (musicInterval) clearInterval(musicInterval);
+            musicInterval = setInterval(() => { if (isMusicPlaying && !isMusicMuted) playMelody(); }, 2800);
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('musicBtn');
+            if (isMusicMuted) {
+                isMusicMuted = false;
+                btn.textContent = '🔊';
+                btn.classList.remove('muted');
+                if (!isMusicPlaying) startMusic();
+                else playLoop();
+                showToast('🔊', '音乐已开启', '背景音乐已恢复', 'info');
+            } else {
+                isMusicMuted = true;
+                btn.textContent = '🔇';
+                btn.classList.add('muted');
+                if (musicInterval) { clearInterval(musicInterval);
+                    musicInterval = null; }
+                if (audioCtx) { try { audioCtx.close(); } catch (e) {}
+                    audioCtx = null; }
+                showToast('🔇', '音乐已关闭', '背景音乐已暂停', 'info');
+            }
+        }
+
+        let musicActivated = false;
+
+        function activateMusic() {
+            if (musicActivated) return;
+            musicActivated = true;
+            setTimeout(() => {
+                startMusic();
+                setTimeout(() => {
+                    if (!isMusicPlaying && !isMusicMuted) {
+                        const ctx = initAudio();
+                        if (ctx && ctx.state === 'suspended') {
+                            ctx.resume().then(() => { isMusicPlaying = true;
+                                playLoop(); }).catch(() => {});
+                        }
+                    }
+                }, 500);
+            }, 300);
+        }
+        document.addEventListener('click', function() { if (!musicActivated) activateMusic(); }, { once: false });
+        document.addEventListener('touchstart', function() { if (!musicActivated) activateMusic(); }, { once: false });
+        document.getElementById('musicBtn').textContent = '🔊';
+
+        // ================================================================
+        // 封面确认弹窗
+        // ================================================================
+        function showCoverConfirm() {
+            document.getElementById('coverConfirm').classList.add('show');
+            activateMusic();
+        }
+
+        function confirmStart() {
+            document.getElementById('coverConfirm').classList.remove('show');
+            goToPage('p3');
+        }
+
+        document.getElementById('coverConfirm').addEventListener('click', function(e) {
+            if (e.target === this) { /* 不关闭 */ }
+        });
+
+        // ================================================================
+        // 页面导航
+        // ================================================================
+        function goToPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo(0, 0);
+            if (isMusicPlaying && !isMusicMuted && !musicInterval) playLoop();
+        }
+
+        // ================================================================
+        // 音效
+        // ================================================================
+        function playBeep(type) {
+            try {
+                const ctx = new(window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                if (type === 'correct') {
+                    osc.frequency.value = 880;
+                    gain.gain.value = 0.10;
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.10);
+                    setTimeout(() => {
+                        try {
+                            const o2 = ctx.createOscillator();
+                            const g2 = ctx.createGain();
+                            o2.connect(g2);
+                            g2.connect(ctx.destination);
+                            o2.frequency.value = 1100;
+                            g2.gain.value = 0.08;
+                            o2.start(ctx.currentTime + 0.10);
+                            o2.stop(ctx.currentTime + 0.16);
+                        } catch (e) {}
+                    }, 80);
+                } else if (type === 'error') {
+                    osc.frequency.value = 330;
+                    gain.gain.value = 0.14;
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.25);
+                } else {
+                    osc.frequency.value = 660;
+                    gain.gain.value = 0.08;
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.08);
+                }
+            } catch (e) {}
+        }
+
+        // ================================================================
+        // Toast
+        // ================================================================
+        function showToast(icon, title, desc, type = 'info') {
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastDesc').textContent = desc;
+            document.getElementById('toast').className = 'toast ' + type + ' show';
+        }
+
+        function hideToast() { document.getElementById('toast').classList.remove('show'); }
+        document.getElementById('toastBtn').addEventListener('click', hideToast);
+        document.getElementById('toast').addEventListener('click', function(e) { if (e.target === this) hideToast(); });
+
+        // ================================================================
+        // 反馈弹窗
+        // ================================================================
+        const feedbackOverlay = document.getElementById('feedbackOverlay');
+        const fbIcon = document.getElementById('fbIcon');
+        const fbTitle = document.getElementById('fbTitle');
+        const fbDesc = document.getElementById('fbDesc');
+        const fbBtn = document.getElementById('fbBtn');
+        let feedbackCallback = null;
+
+        function showFeedback(icon, title, desc, type = 'info') {
+            fbIcon.textContent = icon;
+            fbTitle.textContent = title;
+            fbDesc.textContent = desc;
+            fbBtn.className = 'btn-fb-close ' + type;
+            feedbackOverlay.classList.add('show');
+        }
+
+        function hideFeedback() {
+            feedbackOverlay.classList.remove('show');
+            if (feedbackCallback) { const cb = feedbackCallback;
+                feedbackCallback = null;
+                setTimeout(cb, 100); }
+        }
+        fbBtn.addEventListener('click', hideFeedback);
+        feedbackOverlay.addEventListener('click', function(e) { if (e.target === this) hideFeedback(); });
+
+        // ================================================================
+        // 工具
+        // ================================================================
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // ================================================================
+        // 关卡状态（5关）
+        // ================================================================
+        const LEVEL_STATUS = { l1: false, l2: false, l3: false, l4: false, l5: false };
+
+        function saveLevelStatus() {
+            try {
+                const data = { status: LEVEL_STATUS };
+                localStorage.setItem('levelStatus', JSON.stringify(data));
+            } catch (e) {}
+        }
+
+        function loadLevelStatus() {
+            try {
+                const data = localStorage.getItem('levelStatus');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (parsed.status) {
+                        Object.keys(parsed.status).forEach(key => { if (key in LEVEL_STATUS) LEVEL_STATUS[key] = parsed
+                                .status[key]; });
+                    }
+                }
+            } catch (e) {}
+        }
+        loadLevelStatus();
+
+        // ================================================================
+        // 第一关
+        // ================================================================
+        const CORRECT_ORDER = ['汤', '蔬菜', '肉', '米饭'];
+        const FOOD_EMOJI = { '汤': '🥣', '蔬菜': '🥬', '肉': '🍗', '米饭': '🍚' };
+        const ERROR_REASON = {
+            '汤': '汤应该第一个吃！先喝汤润胃，再吃菜和肉。',
+            '蔬菜': '蔬菜应该在肉之前吃！膳食纤维先铺开，延缓油脂吸收。',
+            '肉': '肉应该在蔬菜之后吃！先吃菜垫底，再吃肉。',
+            '米饭': '米饭必须放最后！空腹吃主食，血糖会瞬间飙高。'
+        };
+
+        let level1SlotStates = [null, null, null, null];
+        let level1SlotLocked = [false, false, false, false];
+        let level1Completed = false;
+        let level1ErrorCount = 0;
+        const maxErrors1 = 3;
+        let isRevealed1 = false;
+
+        function updateChanceDisplay1() {
+            const remaining = maxErrors1 - level1ErrorCount;
+            document.getElementById('chanceNum1').textContent = remaining;
+            document.getElementById('chanceNum1').className = remaining <= 0 ? 'num zero' : 'num';
+        }
+
+        function renderSlots1() {
+            document.querySelectorAll('#slotsArea .slot').forEach((slot, idx) => {
+                const name = level1SlotStates[idx];
+                const locked = level1SlotLocked[idx];
+                const contentSpan = slot.querySelector('.slot-content');
+                if (name) {
+                    contentSpan.textContent = `${FOOD_EMOJI[name]} ${name}`;
+                    slot.className = 'slot filled' + (locked ? ' correct' : '');
+                } else {
+                    contentSpan.textContent = '？';
+                    slot.className = 'slot';
+                }
+            });
+        }
+
+        function renderFoods1() {
+            const allFoods = ['汤', '蔬菜', '肉', '米饭'];
+            const shuffled = shuffleArray([...allFoods]);
+            const pool = document.getElementById('foodPool');
+            pool.innerHTML = '';
+            shuffled.forEach(name => {
+                const div = document.createElement('div');
+                div.className = 'food-item';
+                div.dataset.name = name;
+                div.innerHTML =
+                    `<span class="food-emoji">${FOOD_EMOJI[name]}</span><span class="food-name">${name}</span>`;
+                const lockedIdx = level1SlotStates.indexOf(name);
+                if (lockedIdx !== -1 && level1SlotLocked[lockedIdx]) {
+                    div.classList.add('used');
+                }
+                div.addEventListener('click', function() {
+                    if (level1Completed || isRevealed1) return;
+                    if (this.classList.contains('used')) return;
+
+                    const foodName = this.dataset.name;
+
+                    const existingIdx = level1SlotStates.indexOf(foodName);
+                    if (existingIdx !== -1 && level1SlotLocked[existingIdx]) {
+                        showToast('🔒', '已正确填入', `“${foodName}”已经放在正确位置了！`, 'info');
+                        return;
+                    }
+
+                    const emptyIndex = level1SlotStates.findIndex((val, idx) => val === null && !level1SlotLocked[idx]);
+                    if (emptyIndex === -1) {
+                        showToast('⚠️', '格子已满', '所有位置都已填满，点“重新排列”再试', 'warning');
+                        return;
+                    }
+
+                    const correctName = CORRECT_ORDER[emptyIndex];
+                    if (foodName === correctName) {
+                        level1SlotStates[emptyIndex] = foodName;
+                        level1SlotLocked[emptyIndex] = true;
+                        this.classList.add('used');
+                        renderSlots1();
+                        playBeep('correct');
+                        showToast('✅', '配对正确！', `${foodName} 就位！继续配对其他食物。`, 'success');
+
+                        if (level1SlotLocked.every(v => v === true)) {
+                            level1Completed = true;
+                            LEVEL_STATUS.l1 = true;
+                            saveLevelStatus();
+                            document.getElementById('btnNextLevel1').classList.add('show');
+                            playBeep('correct');
+                            setTimeout(() => {
+                                showToast('🎉', '🎊 第一关通关！', '汤→菜→肉→饭，记住这个顺序！', 'success');
+                            }, 300);
+                        }
+                    } else {
+                        const slotEl = document.querySelectorAll('#slotsArea .slot')[emptyIndex];
+                        slotEl.className = 'slot wrong';
+                        playBeep('error');
+                        showToast('❌', '顺序错误', `“${foodName}”不应该放在第${emptyIndex+1}位（应该是“${correctName}”），再想想！`,
+                            'error');
+                        level1ErrorCount++;
+                        updateChanceDisplay1();
+                        setTimeout(() => {
+                            if (!level1SlotLocked[emptyIndex]) slotEl.className = 'slot';
+                        }, 600);
+                        if (level1ErrorCount >= maxErrors1) {
+                            setTimeout(() => { revealAnswer1(); }, 1000);
+                        }
+                    }
+                });
+                pool.appendChild(div);
+            });
+        }
+
+        function revealAnswer1() {
+            isRevealed1 = true;
+            level1Completed = true;
+            LEVEL_STATUS.l1 = true;
+            saveLevelStatus();
+            document.getElementById('btnNextLevel1').classList.add('show');
+            document.querySelectorAll('#slotsArea .slot').forEach((slot, idx) => {
+                const correctName = CORRECT_ORDER[idx];
+                slot.querySelector('.slot-content').textContent = `${FOOD_EMOJI[correctName]} ${correctName}`;
+                slot.className = 'slot reveal';
+            });
+            document.querySelectorAll('#foodPool .food-item').forEach(f => { f.classList.add('used'); });
+            showToast('📖', '正确答案揭晓', `汤 → 菜 → 肉 → 饭\n\n${CORRECT_ORDER.map(name => `${FOOD_EMOJI[name]} ${name}：${ERROR_REASON[name]}`).join('\n')}`,
+                'info');
+            playBeep('correct');
+        }
+
+        function resetLevel1() {
+            level1SlotStates = [null, null, null, null];
+            level1SlotLocked = [false, false, false, false];
+            level1Completed = false;
+            isRevealed1 = false;
+            level1ErrorCount = 0;
+            updateChanceDisplay1();
+            document.getElementById('btnNextLevel1').classList.remove('show');
+            renderSlots1();
+            renderFoods1();
+            hideToast();
+        }
+
+        // ================================================================
+        // 第二关 · 大火收汁
+        // ================================================================
+        const COOKING_DATA = [
+            { name: '鱼', emoji: '🐟', correct: '蒸' },
+            { name: '排骨', emoji: '🍖', correct: '炖' },
+            { name: '青菜', emoji: '🥬', correct: '白灼' },
+            { name: '鸡蛋', emoji: '🥚', correct: '蒸' }
+        ];
+
+        const METHOD_EMOJI = { '蒸': '♨️', '白灼': '🫧', '炒': '🍳', '炖': '🥘' };
+        const METHOD_DESC = { '蒸': '清淡', '白灼': '清爽', '炒': '香脆', '炖': '软烂' };
+
+        let cookIndex = 0;
+        let cookScore = 0;
+        let cookRunning = false;
+        let cookCompleted = false;
+        let cookLocked = false;
+        let cookQuestionCount = 4;
+        let cookShuffled = [];
+
+        function renderCookQuestion() {
+            if (cookIndex >= cookQuestionCount) {
+                endCookGame();
+                return;
+            }
+            const data = cookShuffled[cookIndex];
+            const display = document.getElementById('cookFoodDisplay');
+            display.innerHTML = `
+                <span class="food-emoji-big">${data.emoji}</span>
+                <span class="food-name-big">${data.name}</span>
+                <span class="food-hint">👆 哪种烹饪方式最合适？</span>
+            `;
+            document.getElementById('cookProgressText').textContent = `${cookIndex+1}/${cookQuestionCount}`;
+            document.getElementById('cookProgressBar').style.width = `${((cookIndex) / cookQuestionCount) * 100}%`;
+
+            const options = document.querySelectorAll('#cookOptions .cook-option');
+            const methods = ['蒸', '白灼', '炒', '炖'];
+            const shuffledMethods = shuffleArray([...methods]);
+            options.forEach((opt, idx) => {
+                const method = shuffledMethods[idx];
+                opt.dataset.method = method;
+                opt.querySelector('.cook-emoji').textContent = METHOD_EMOJI[method] || '🍳';
+                opt.querySelector('.cook-label').textContent = method;
+                opt.querySelector('.cook-sub').textContent = METHOD_DESC[method] || '';
+                opt.className = 'cook-option';
+                opt.onclick = null;
+                opt.onclick = function() { handleCookClick(method); };
+            });
+
+            cookLocked = false;
+        }
+
+        function handleCookClick(method) {
+            if (cookLocked || !cookRunning || cookCompleted) return;
+            cookLocked = true;
+
+            const data = cookShuffled[cookIndex];
+            const isCorrect = (method === data.correct);
+
+            document.querySelectorAll('#cookOptions .cook-option').forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.dataset.method === data.correct) {
+                    opt.classList.add('reveal-correct');
+                } else if (opt.dataset.method === method && !isCorrect) {
+                    opt.classList.add('reveal-wrong');
+                }
+            });
+
+            if (isCorrect) {
+                cookScore++;
+                playBeep('correct');
+                showToast('✅', '完美！', `${data.emoji} ${data.name} 最适合 ${data.correct}！`, 'success');
+            } else {
+                playBeep('error');
+                showToast('❌', '再想想', `${data.emoji} ${data.name} 应该 ${data.correct}，不是 ${method}`, 'error');
+            }
+            document.getElementById('cookScore').textContent = cookScore;
+
+            setTimeout(() => {
+                cookIndex++;
+                renderCookQuestion();
+            }, 1200);
+        }
+
+        function endCookGame() {
+            cookRunning = false;
+            cookCompleted = true;
+            document.getElementById('cookProgressBar').style.width = '100%';
+            document.querySelectorAll('#cookOptions .cook-option').forEach(o => o.classList.add('disabled'));
+
+            const total = cookQuestionCount;
+            const score = cookScore;
+            const passed = score >= 3;
+
+            let stars = '⭐';
+            let comment = '';
+            if (score === total) { stars = '🌟🌟🌟';
+                comment = '完美大厨！所有烹饪方式都选对了！'; } else if (score >= 3) { stars = '🌟🌟';
+                comment = '很棒！你掌握了大部分烹饪知识！'; } else { stars = '💪';
+                comment = '多了解不同食材的最佳烹饪方式！'; }
+
+            const display = document.getElementById('cookFoodDisplay');
+            display.innerHTML = `
+                <span class="food-emoji-big">${passed ? '🎉' : '📖'}</span>
+                <span class="food-name-big">${stars} ${score}/${total}</span>
+                <span class="food-hint">${comment}</span>
+            `;
+
+            if (passed) {
+                LEVEL_STATUS.l2 = true;
+                saveLevelStatus();
+                document.getElementById('btnNextLevel2').classList.add('show');
+                showToast('🎉', `得分 ${score}/${total}！通关！`, '答对3题（75%）即可通关，你做到了！', 'success');
+            } else {
+                document.getElementById('btnNextLevel2').classList.remove('show');
+                showToast('📖', `得分 ${score}/${total}`, '需要答对3题（75%）才能通关，再试一次！', 'info');
+            }
+
+            document.getElementById('startLevel2Btn').disabled = false;
+        }
+
+        function startLevel2() {
+            if (cookRunning) return;
+            cookIndex = 0;
+            cookScore = 0;
+            cookRunning = true;
+            cookCompleted = false;
+            cookLocked = false;
+            cookQuestionCount = COOKING_DATA.length;
+            cookShuffled = shuffleArray([...COOKING_DATA]);
+            document.getElementById('btnNextLevel2').classList.remove('show');
+            document.getElementById('startLevel2Btn').disabled = true;
+            document.getElementById('cookScore').textContent = '0';
+            renderCookQuestion();
+        }
+
+        function resetLevel2() {
+            cookRunning = false;
+            cookCompleted = false;
+            cookLocked = false;
+            cookIndex = 0;
+            cookScore = 0;
+            document.getElementById('btnNextLevel2').classList.remove('show');
+            document.getElementById('startLevel2Btn').disabled = false;
+            document.getElementById('cookScore').textContent = '0';
+            document.getElementById('cookProgressBar').style.width = '0%';
+            document.getElementById('cookProgressText').textContent = '1/4';
+            document.querySelectorAll('#cookOptions .cook-option').forEach(o => o.classList.add('disabled'));
+            document.getElementById('cookFoodDisplay').innerHTML = `<span class="waiting-text">👆 点击「开始烹饪」</span>`;
+            hideToast();
+        }
+
+        // ================================================================
+        // 第三关 · 零食大侦探
+        // ================================================================
+        const SNACKS_FIXED = [
+            { name: '无糖酸奶', emoji: '🥛', canEat: true },
+            { name: '黄瓜', emoji: '🥒', canEat: true },
+            { name: '苹果', emoji: '🍎', canEat: true },
+            { name: '原味核桃', emoji: '🥜', canEat: true },
+            { name: '风味酸奶', emoji: '🫗', canEat: false },
+            { name: '果汁', emoji: '🧃', canEat: false }
+        ];
+
+        let checkedState3 = [];
+        let level3Running = false;
+        let level3Completed = false;
+        let level3Checked = false;
+        let errorCount3 = 0;
+        const maxErrors3 = 3;
+        let isRevealed3 = false;
+
+        function renderSnacks3() {
+            const container = document.getElementById('snackGrid3');
+            container.innerHTML = '';
+            SNACKS_FIXED.forEach((snack, idx) => {
+                const card = document.createElement('div');
+                card.className = 'snack-card';
+                card.dataset.index = idx;
+                const isChecked = checkedState3[idx] || false;
+                if (isChecked) card.classList.add('selected');
+                card.innerHTML = `
+                    <span class="snack-emoji">${snack.emoji}</span>
+                    <span class="snack-name">${snack.name}</span>
+                `;
+                card.addEventListener('click', function() {
+                    if (level3Completed || isRevealed3 || level3Checked) return;
+                    if (!level3Running) {
+                        showToast('👆', '请先开始', '点击「开始挑选」后再选零食哦！', 'warning');
+                        return;
+                    }
+                    const idx2 = parseInt(this.dataset.index);
+                    checkedState3[idx2] = !checkedState3[idx2];
+                    renderSnacks3();
+                    updateStats3();
+                    updateCheckButton3();
+                    playBeep('click');
+                });
+                container.appendChild(card);
+            });
+            updateStats3();
+            updateCheckButton3();
+        }
+
+        function updateStats3() {
+            document.getElementById('totalCount3').textContent = SNACKS_FIXED.length;
+            document.getElementById('checkedCount3').textContent = checkedState3.filter(v => v === true).length;
+        }
+
+        function updateCheckButton3() {
+            document.getElementById('checkLevel3Btn').disabled = !checkedState3.some(v => v === true) || level3Completed ||
+                isRevealed3 || level3Checked;
+        }
+
+        function updateChanceDisplay3() {
+            const remaining = maxErrors3 - errorCount3;
+            document.getElementById('chanceNum3').textContent = remaining;
+            document.getElementById('chanceNum3').className = remaining <= 0 ? 'num zero' : 'num';
+        }
+
+        function resetLevel3() {
+            level3Running = false;
+            level3Completed = false;
+            level3Checked = false;
+            isRevealed3 = false;
+            errorCount3 = 0;
+            checkedState3 = SNACKS_FIXED.map(() => false);
+            updateChanceDisplay3();
+            document.getElementById('startLevel3Btn').disabled = false;
+            document.getElementById('checkLevel3Btn').disabled = true;
+            document.getElementById('btnNextLevel3').classList.remove('show');
+            renderSnacks3();
+            updateStats3();
+            updateCheckButton3();
+            document.querySelectorAll('#snackGrid3 .snack-card').forEach(el => {
+                el.classList.remove('disabled', 'correct-reveal', 'wrong-reveal', 'miss-reveal');
+            });
+            hideToast();
+        }
+
+        function startLevel3() {
+            if (level3Running) return;
+            errorCount3 = 0;
+            level3Running = true;
+            level3Completed = false;
+            level3Checked = false;
+            isRevealed3 = false;
+            checkedState3 = SNACKS_FIXED.map(() => false);
+            updateChanceDisplay3();
+            document.getElementById('btnNextLevel3').classList.remove('show');
+            document.getElementById('startLevel3Btn').disabled = true;
+            document.getElementById('checkLevel3Btn').disabled = true;
+            renderSnacks3();
+            updateStats3();
+            updateCheckButton3();
+            document.querySelectorAll('#snackGrid3 .snack-card').forEach(el => {
+                el.classList.remove('disabled', 'correct-reveal', 'wrong-reveal', 'miss-reveal');
+            });
+        }
+
+        function checkLevel3() {
+            if (level3Completed || level3Checked || isRevealed3) return;
+            if (!checkedState3.some(v => v === true)) {
+                showToast('👆', '还没选呢', '至少选一种零食再验证吧！', 'warning');
+                return;
+            }
+            level3Checked = true;
+
+            let correctCount = 0;
+            let results = [];
+            SNACKS_FIXED.forEach((snack, idx) => {
+                const userChecked = checkedState3[idx] || false;
+                if (userChecked && snack.canEat) correctCount++;
+                results.push({ name: snack.name, emoji: snack.emoji, userChecked, correct: snack.canEat,
+                    isCorrect: (userChecked === snack.canEat) });
+            });
+
+            let totalRight = 0;
+            results.forEach(r => { if (r.isCorrect) totalRight++; });
+            const accuracy = Math.round((totalRight / SNACKS_FIXED.length) * 100);
+
+            document.querySelectorAll('#snackGrid3 .snack-card').forEach((card, idx) => {
+                const r = results[idx];
+                card.classList.add('disabled');
+                if (r.userChecked && r.correct) {
+                    card.classList.add('correct-reveal');
+                } else if (r.userChecked && !r.correct) {
+                    card.classList.add('wrong-reveal');
+                } else if (!r.userChecked && r.correct) {
+                    card.classList.add('miss-reveal');
+                }
+            });
+
+            const passed = accuracy >= 75;
+            if (passed) {
+                playBeep('correct');
+                level3Completed = true;
+                LEVEL_STATUS.l3 = true;
+                saveLevelStatus();
+                document.getElementById('btnNextLevel3').classList.add('show');
+                document.getElementById('startLevel3Btn').disabled = true;
+                document.getElementById('checkLevel3Btn').disabled = true;
+                const correctNames = SNACKS_FIXED.filter(s => s.canEat).map(s => s.name).join('、');
+                showToast('🎉', `正确率 ${accuracy}%！通关！`, `适合加餐的零食：${correctNames}`, 'success');
+            } else {
+                playBeep('error');
+                errorCount3++;
+                updateChanceDisplay3();
+                const remaining = maxErrors3 - errorCount3;
+                let wrongMsg = '';
+                results.forEach(r => {
+                    if (r.userChecked && !r.correct) wrongMsg += `「${r.name}」不该选 `;
+                });
+                if (!wrongMsg) wrongMsg = '再仔细看看哪些零食适合加餐！';
+                showToast('❌', `正确率 ${accuracy}%`, `${wrongMsg}。还剩 ${remaining} 次机会`, 'error');
+                if (errorCount3 >= maxErrors3) { setTimeout(() => { revealAnswer3(); }, 1200); return; }
+                setTimeout(() => {
+                    checkedState3 = SNACKS_FIXED.map(() => false);
+                    level3Checked = false;
+                    renderSnacks3();
+                    updateStats3();
+                    updateCheckButton3();
+                    document.querySelectorAll('#snackGrid3 .snack-card').forEach(el => {
+                        el.classList.remove('disabled', 'correct-reveal', 'wrong-reveal', 'miss-reveal');
+                    });
+                }, 2000);
+            }
+        }
+
+        function revealAnswer3() {
+            isRevealed3 = true;
+            level3Completed = true;
+            LEVEL_STATUS.l3 = true;
+            saveLevelStatus();
+            level3Checked = true;
+            document.querySelectorAll('#snackGrid3 .snack-card').forEach((card, idx) => {
+                const snack = SNACKS_FIXED[idx];
+                card.classList.add('disabled');
+                if (snack.canEat) {
+                    card.classList.add('correct-reveal');
+                } else {
+                    card.classList.add('wrong-reveal');
+                }
+            });
+            document.getElementById('btnNextLevel3').classList.add('show');
+            document.getElementById('startLevel3Btn').disabled = true;
+            document.getElementById('checkLevel3Btn').disabled = true;
+            const correctNames = SNACKS_FIXED.filter(s => s.canEat).map(s => s.name).join('、');
+            showToast('📖', '正确答案揭晓', `适合加餐的零食：${correctNames}`, 'info');
+            playBeep('correct');
+        }
+
+        // ================================================================
+        // 第四关 · 手掌配餐
+        // ================================================================
+        const MATCH_RULES = {
+            '蛋白质': { hand: '🖐️', handName: '一掌' },
+            '主食': { hand: '👊', handName: '一拳' },
+            '蔬菜': { hand: '🤲', handName: '两捧' },
+            '油脂': { hand: '👍', handName: '一拇指' }
+        };
+        const FOOD_DATA4 = [
+            { id: 'protein', label: '蛋白质', icon: '🥩', sub: '肉/鱼/蛋/豆腐' },
+            { id: 'staple', label: '主食', icon: '🍚', sub: '米饭/面条/杂粮' },
+            { id: 'veg', label: '蔬菜', icon: '🥬', sub: '叶菜/瓜类' },
+            { id: 'oil', label: '油脂', icon: '🧈', sub: '植物油/坚果' }
+        ];
+        const HAND_DATA4 = [
+            { id: 'palm', emoji: '🖐️', name: '一掌' },
+            { id: 'fist', emoji: '👊', name: '一拳' },
+            { id: 'twohands', emoji: '🤲', name: '两捧' },
+            { id: 'thumb', emoji: '👍', name: '一拇指' }
+        ];
+
+        let level4SlotStates = [null, null, null, null];
+        let level4Running = false;
+        let level4Completed = false;
+        let level4Checked = false;
+        let errorCount4 = 0;
+        const maxErrors4 = 3;
+        let isRevealed4 = false;
+        let dragData4 = null;
+        let dragClone4 = null;
+        let currentFoodOrder4 = [];
+
+        function renderSlots4() {
+            if (currentFoodOrder4.length === 0) currentFoodOrder4 = shuffleArray([...FOOD_DATA4]);
+            const container = document.getElementById('foodSlots4');
+            container.innerHTML = '';
+            currentFoodOrder4.forEach((food, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'food-slot';
+                slot.dataset.index = idx;
+                slot.dataset.foodLabel = food.label;
+                slot.dataset.foodIcon = food.icon;
+                slot.dataset.foodSub = food.sub;
+                const state = level4SlotStates[idx];
+                let html =
+                    `<div class="food-icon-fixed"><span>${food.icon}</span><span class="food-label">${food.label}</span><span class="food-sub">${food.sub}</span></div>`;
+                if (state) {
+                    html +=
+                        `<div class="hand-overlay"><span class="slot-hand">${state.handEmoji}</span><span class="slot-hand-name">${state.handName}</span></div><div class="slot-remove" data-index="${idx}">✕</div>`;
+                    slot.className += ' filled';
+                } else {
+                    html += `<div class="hand-overlay" style="display:none;"></div>`;
+                }
+                slot.innerHTML = html;
+                if (state) {
+                    slot.querySelector('.slot-remove').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        removeFromSlot4(parseInt(this.dataset.index));
+                    });
+                }
+                slot.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (level4Completed || isRevealed4 || level4Checked) return;
+                    if (level4SlotStates[parseInt(this.dataset.index)] !== null) return;
+                    this.classList.add('drag-over');
+                });
+                slot.addEventListener('dragleave', function(e) { this.classList.remove('drag-over'); });
+                slot.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    if (level4Completed || isRevealed4 || level4Checked) return;
+                    const idx2 = parseInt(this.dataset.index);
+                    if (level4SlotStates[idx2] !== null || !dragData4) return;
+                    if (level4SlotStates.some(s => s && s.handEmoji === dragData4.emoji)) {
+                        showToast('⚠️', '已使用', '这个手掌已经匹配过了', 'warning');
+                        return;
+                    }
+                    level4SlotStates[idx2] = { handEmoji: dragData4.emoji, handName: dragData4.name };
+                    renderSlots4();
+                    renderHands4();
+                    updateCheckButton4();
+                    playBeep('click');
+                });
+                slot.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+                container.appendChild(slot);
+            });
+        }
+
+        function removeFromSlot4(index) {
+            if (level4Completed || isRevealed4 || level4Checked) return;
+            level4SlotStates[index] = null;
+            renderSlots4();
+            renderHands4();
+            updateCheckButton4();
+            playBeep('click');
+        }
+
+        function renderHands4() {
+            const container = document.getElementById('handPool4');
+            container.innerHTML = '';
+            const usedEmojis = level4SlotStates.filter(s => s !== null).map(s => s.handEmoji);
+            HAND_DATA4.forEach(hand => {
+                const div = document.createElement('div');
+                div.className = 'hand-item';
+                div.dataset.handEmoji = hand.emoji;
+                div.dataset.handName = hand.name;
+                const isUsed = usedEmojis.includes(hand.emoji);
+                if (isUsed) div.classList.add('used');
+                div.innerHTML = `<span class="hand-emoji">${hand.emoji}</span><span class="hand-name">${hand.name}</span>`;
+                if (!isUsed) {
+                    div.draggable = true;
+                    div.addEventListener('dragstart', function(e) {
+                        if (level4Completed || isRevealed4 || level4Checked) { e.preventDefault(); return; }
+                        dragData4 = { emoji: this.dataset.handEmoji, name: this.dataset.handName };
+                        this.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                        const clone = this.cloneNode(true);
+                        clone.style.position = 'absolute';
+                        clone.style.top = '-9999px';
+                        clone.style.width = '80px';
+                        clone.style.background = 'white';
+                        clone.style.borderRadius = '14px';
+                        clone.style.padding = '10px';
+                        clone.style.border = '3px solid #E67E22';
+                        clone.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
+                        document.body.appendChild(clone);
+                        e.dataTransfer.setDragImage(clone, 40, 40);
+                        setTimeout(() => document.body.removeChild(clone), 0);
+                    });
+                    div.addEventListener('dragend', function(e) { this.classList.remove('dragging'); });
+                    div.addEventListener('touchstart', function(e) {
+                        if (level4Completed || isRevealed4 || level4Checked) return;
+                        const touch = e.touches[0];
+                        dragData4 = { emoji: this.dataset.handEmoji, name: this.dataset.handName };
+                        this.classList.add('dragging');
+                        dragClone4 = document.createElement('div');
+                        dragClone4.className = 'drag-clone';
+                        dragClone4.innerHTML =
+                            `<span class="hand-emoji">${dragData4.emoji}</span><span class="hand-name">${dragData4.name}</span>`;
+                        dragClone4.style.left = touch.clientX + 'px';
+                        dragClone4.style.top = touch.clientY + 'px';
+                        document.body.appendChild(dragClone4);
+                    }, { passive: true });
+                    div.addEventListener('touchmove', function(e) {
+                        e.preventDefault();
+                        if (!dragClone4) return;
+                        const touch = e.touches[0];
+                        dragClone4.style.left = touch.clientX + 'px';
+                        dragClone4.style.top = touch.clientY + 'px';
+                        document.querySelectorAll('#foodSlots4 .food-slot').forEach(slot => {
+                            const rect = slot.getBoundingClientRect();
+                            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                                slot.classList.add('drag-over');
+                            } else {
+                                slot.classList.remove('drag-over');
+                            }
+                        });
+                    }, { passive: false });
+                    div.addEventListener('touchend', function(e) {
+                        this.classList.remove('dragging');
+                        if (dragClone4) { document.body.removeChild(dragClone4);
+                            dragClone4 = null; }
+                        const touch = e.changedTouches[0];
+                        let targetSlot = null;
+                        document.querySelectorAll('#foodSlots4 .food-slot').forEach(slot => {
+                            slot.classList.remove('drag-over');
+                            const rect = slot.getBoundingClientRect();
+                            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                                targetSlot = slot;
+                            }
+                        });
+                        if (targetSlot && dragData4 && !level4Completed && !isRevealed4 && !level4Checked) {
+                            const idx = parseInt(targetSlot.dataset.index);
+                            if (level4SlotStates[idx] === null) {
+                                if (!level4SlotStates.some(s => s && s.handEmoji === dragData4.emoji)) {
+                                    level4SlotStates[idx] = { handEmoji: dragData4.emoji,
+                                        handName: dragData4.name };
+                                    renderSlots4();
+                                    renderHands4();
+                                    updateCheckButton4();
+                                    playBeep('click');
+                                }
+                            }
+                        }
+                        dragData4 = null;
+                    }, { passive: true });
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function updateCheckButton4() {
+            const allFilled = level4SlotStates.every(s => s !== null);
+            document.getElementById('checkLevel4Btn').disabled = !allFilled || level4Completed || isRevealed4 || level4Checked;
+        }
+
+        function updateChanceDisplay4() {
+            const remaining = maxErrors4 - errorCount4;
+            document.getElementById('chanceNum4').textContent = remaining;
+            document.getElementById('chanceNum4').className = remaining <= 0 ? 'num zero' : 'num';
+        }
+
+        function resetLevel4() {
+            level4Running = false;
+            level4Completed = false;
+            level4Checked = false;
+            isRevealed4 = false;
+            errorCount4 = 0;
+            level4SlotStates = [null, null, null, null];
+            currentFoodOrder4 = shuffleArray([...FOOD_DATA4]);
+            updateChanceDisplay4();
+            document.getElementById('startLevel4Btn').disabled = false;
+            document.getElementById('checkLevel4Btn').disabled = true;
+            document.getElementById('btnNextLevel4').classList.remove('show');
+            renderSlots4();
+            renderHands4();
+            updateCheckButton4();
+            hideToast();
+        }
+
+        function startLevel4() {
+            if (level4Running) return;
+            errorCount4 = 0;
+            level4Running = true;
+            level4Completed = false;
+            level4Checked = false;
+            isRevealed4 = false;
+            level4SlotStates = [null, null, null, null];
+            currentFoodOrder4 = shuffleArray([...FOOD_DATA4]);
+            updateChanceDisplay4();
+            document.getElementById('btnNextLevel4').classList.remove('show');
+            document.getElementById('startLevel4Btn').disabled = true;
+            document.getElementById('checkLevel4Btn').disabled = true;
+            renderSlots4();
+            renderHands4();
+            updateCheckButton4();
+        }
+
+        function checkLevel4() {
+            if (level4SlotStates.some(s => s === null) || level4Completed || level4Checked || isRevealed4) return;
+            level4Checked = true;
+            let correctCount = 0;
+            let errors = [];
+            document.querySelectorAll('#foodSlots4 .food-slot').forEach((slot, idx) => {
+                const foodLabel = slot.dataset.foodLabel;
+                const state = level4SlotStates[idx];
+                if (!state) return;
+                const rule = MATCH_RULES[foodLabel];
+                if (!rule) return;
+                if (state.handEmoji === rule.hand) { correctCount++;
+                    slot.className = 'food-slot filled correct'; } else {
+                    slot.className = 'food-slot filled wrong';
+                    errors.push(`「${foodLabel}」配了${state.handName}，应该配${rule.handName}`);
+                }
+            });
+            if (correctCount === 4) {
+                playBeep('correct');
+                level4Completed = true;
+                LEVEL_STATUS.l4 = true;
+                saveLevelStatus();
+                document.getElementById('btnNextLevel4').classList.add('show');
+                document.getElementById('startLevel4Btn').disabled = true;
+                document.getElementById('checkLevel4Btn').disabled = true;
+                showToast('🎉', '🎊 配餐全部正确！', '一掌肉、一拳饭、两捧菜、拇指油——记住口诀！', 'success');
+                return;
+            }
+            playBeep('error');
+            errorCount4++;
+            updateChanceDisplay4();
+            const remaining = maxErrors4 - errorCount4;
+            const errorMsg = errors.join('；');
+            showToast('❌', `配对了 ${correctCount}/4 个`, `${errorMsg}。还剩 ${remaining} 次机会`, 'error');
+            if (errorCount4 >= maxErrors4) { setTimeout(() => { revealAnswer4(); }, 1200); return; }
+            setTimeout(() => {
+                level4SlotStates = [null, null, null, null];
+                level4Checked = false;
+                document.getElementById('checkLevel4Btn').disabled = true;
+                document.querySelectorAll('#foodSlots4 .food-slot').forEach(s => { s.className = 'food-slot'; });
+                renderSlots4();
+                renderHands4();
+                updateCheckButton4();
+            }, 2000);
+        }
+
+        function revealAnswer4() {
+            isRevealed4 = true;
+            level4Completed = true;
+            LEVEL_STATUS.l4 = true;
+            saveLevelStatus();
+            level4Checked = true;
+            level4SlotStates = [null, null, null, null];
+            renderSlots4();
+            renderHands4();
+            const slots = document.querySelectorAll('#foodSlots4 .food-slot');
+            const correctMapping = {
+                '蛋白质': { hand: '🖐️', name: '一掌' },
+                '主食': { hand: '👊', name: '一拳' },
+                '蔬菜': { hand: '🤲', name: '两捧' },
+                '油脂': { hand: '👍', name: '一拇指' }
+            };
+            slots.forEach((slot) => {
+                const foodLabel = slot.dataset.foodLabel;
+                const correct = correctMapping[foodLabel];
+                if (correct) {
+                    slot.className = 'food-slot reveal-correct';
+                    slot.innerHTML =
+                        `<div class="food-icon-fixed"><span>${slot.dataset.foodIcon}</span><span class="food-label">${foodLabel}</span><span class="food-sub">${slot.dataset.foodSub}</span></div><div class="hand-overlay"><span class="slot-hand">${correct.hand}</span><span class="slot-hand-name">${correct.name}</span><span style="font-size:11px;color:#27AE60;font-weight:600;">✅</span></div>`;
+                }
+            });
+            document.getElementById('btnNextLevel4').classList.add('show');
+            document.getElementById('startLevel4Btn').disabled = true;
+            document.getElementById('checkLevel4Btn').disabled = true;
+            showToast('📖', '正确答案揭晓', '🖐️一掌配肉、👊一拳配饭、🤲两捧配菜、👍拇指配油', 'info');
+            playBeep('correct');
+        }
+
+        // ================================================================
+        // 第五关 · 低血糖救援
+        // ================================================================
+        const QUESTIONS5 = [{
+            id: 1,
+            question: '以下哪个是低血糖急救的正确食物？',
+            options: [
+                { label: '巧克力', emoji: '🍫', correct: false },
+                { label: '果汁', emoji: '🥤', correct: true },
+                { label: '米饭', emoji: '🍚', correct: false },
+                { label: '沙拉', emoji: '🥗', correct: false }
+            ],
+            correctIndex: 1,
+            correctReason: '✅ 果汁含糖分，吸收快，能快速升高血糖！',
+            wrongReason: '❌ 巧克力含油脂吸收慢；米饭升糖慢；沙拉不升糖。'
+        }, {
+            id: 2,
+            question: '以下哪个是低血糖的典型症状？',
+            options: [
+                { label: '心慌手抖出汗', emoji: '😰', correct: true },
+                { label: '嗜睡', emoji: '😴', correct: false },
+                { label: '恶心呕吐', emoji: '🤢', correct: false },
+                { label: '发烧', emoji: '🔥', correct: false }
+            ],
+            correctIndex: 0,
+            correctReason: '✅ 心慌、手抖、出冷汗是低血糖的典型症状！',
+            wrongReason: '❌ 嗜睡、呕吐、发烧都不是低血糖的典型症状。'
+        }, {
+            id: 3,
+            question: '吃完糖后应该等多久再测血糖？',
+            options: [
+                { label: '5分钟', emoji: '⏱️', correct: false },
+                { label: '15分钟', emoji: '⏱️', correct: true },
+                { label: '30分钟', emoji: '⏱️', correct: false },
+                { label: '1小时', emoji: '⏱️', correct: false }
+            ],
+            correctIndex: 1,
+            correctReason: '✅ 15分钟是糖分吸收起效的标准时间！',
+            wrongReason: '❌ 5分钟太短；30分钟或1小时太久。'
+        }, {
+            id: 4,
+            question: '患者意识不清时，第一步应该怎么做？',
+            options: [
+                { label: '强行喂糖', emoji: '🍼', correct: false },
+                { label: '拨打120', emoji: '🚑', correct: true },
+                { label: '注射胰岛素', emoji: '💉', correct: false },
+                { label: '掐人中', emoji: '🫳', correct: false }
+            ],
+            correctIndex: 1,
+            correctReason: '✅ 意识不清时绝对不能喂食！立即拨打120！',
+            wrongReason: '❌ 强行喂食会窒息；注射胰岛素更危险；掐人中没有用。'
+        }];
+
+        let currentQIndex5 = 0;
+        let level5Running = false;
+        let level5Completed = false;
+        let errorCount5 = 0;
+        const maxErrors5 = 3;
+        let isRevealed5 = false;
+        let correctCount5 = 0;
+        let isAnswering5 = false;
+        let questionResults5 = [];
+        let isWaitingForFeedback5 = false;
+
+        function renderQuestion5() {
+            if (currentQIndex5 >= QUESTIONS5.length) { showFinalResult5(); return; }
+            const q = QUESTIONS5[currentQIndex5];
+            document.getElementById('currentQNum').textContent = currentQIndex5 + 1;
+            const container = document.getElementById('questionArea5');
+            let html = `<div class="q-text">${q.question}</div><div class="options-grid">`;
+            q.options.forEach((opt, idx) => {
+                html +=
+                    `<div class="option-item" data-index="${idx}" onclick="selectOption5(${idx})"><span class="opt-emoji">${opt.emoji}</span><span class="opt-label">${opt.label}</span></div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+            isWaitingForFeedback5 = false;
+            isAnswering5 = false;
+        }
+
+        function selectOption5(index) {
+            if (!level5Running || level5Completed || isRevealed5 || isAnswering5 || isWaitingForFeedback5) return;
+            const q = QUESTIONS5[currentQIndex5];
+            const isCorrect = (index === q.correctIndex);
+            document.querySelectorAll('#questionArea5 .option-item').forEach(el => el.classList.add('disabled'));
+            document.querySelectorAll('#questionArea5 .option-item').forEach((el, idx) => {
+                if (idx === q.correctIndex) el.classList.add('correct-reveal');
+                else if (idx === index && !isCorrect) el.classList.add('wrong-reveal');
+            });
+            isAnswering5 = true;
+            isWaitingForFeedback5 = true;
+            questionResults5.push({ qIndex: currentQIndex5, selected: index, isCorrect: isCorrect,
+                correctIndex: q.correctIndex });
+            if (isCorrect) { correctCount5++;
+                playBeep('correct');
+                showFeedback('✅', '回答正确！', q.correctReason, 'success'); } else {
+                playBeep('error');
+                showFeedback('❌', '再想想', q.options[index].label + '：' + q.wrongReason, 'error');
+                errorCount5++;
+                updateChanceDisplay5();
+            }
+            feedbackCallback = function() {
+                isWaitingForFeedback5 = false;
+                isAnswering5 = false;
+                currentQIndex5++;
+                if (currentQIndex5 >= QUESTIONS5.length) showFinalResult5();
+                else renderQuestion5();
+            };
+        }
+
+        function updateChanceDisplay5() {
+            const remaining = maxErrors5 - errorCount5;
+            document.getElementById('chanceNum5').textContent = remaining;
+            document.getElementById('chanceNum5').className = remaining <= 0 ? 'num zero' : 'num';
+        }
+
+        function showFinalResult5() {
+            const total = QUESTIONS5.length;
+            const accuracy = Math.round((correctCount5 / total) * 100);
+            const passed = accuracy >= 75;
+            document.querySelectorAll('#questionArea5 .option-item').forEach(el => el.classList.add('disabled'));
+            if (passed) {
+                playBeep('correct');
+                level5Completed = true;
+                LEVEL_STATUS.l5 = true;
+                saveLevelStatus();
+                document.getElementById('btnNextLevel5').classList.add('show');
+                document.getElementById('startLevel5Btn').disabled = true;
+                showFeedback('🎉', `正确率 ${accuracy}%！通关！`, `你答对了 ${correctCount5}/${total} 题，已掌握低血糖急救知识！`,
+                    'success');
+                feedbackCallback = function() {};
+            } else {
+                playBeep('error');
+                const remaining = maxErrors5 - errorCount5;
+                if (remaining > 0) {
+                    showFeedback('📖', `正确率 ${accuracy}%`, `答对了 ${correctCount5}/${total} 题，还剩 ${remaining} 次机会`,
+                        'error');
+                } else {
+                    showFeedback('📖', `正确率 ${accuracy}%`, `答对了 ${correctCount5}/${total} 题，机会已用完`, 'error');
+                }
+                feedbackCallback = function() {
+                    if (errorCount5 >= maxErrors5) revealAnswer5();
+                    else { resetLevel5();
+                        startLevel5(); }
+                };
+            }
+        }
+
+        function revealAnswer5() {
+            isRevealed5 = true;
+            level5Completed = true;
+            LEVEL_STATUS.l5 = true;
+            saveLevelStatus();
+            let html = `<div style="text-align:center;font-size:14px;font-weight:600;color:#1A2A3A;margin-bottom:8px;">📖 正确答案揭晓</div>`;
+            QUESTIONS5.forEach((q, idx) => {
+                const correctOpt = q.options[q.correctIndex];
+                html +=
+                    `<div style="background:rgba(255,255,255,0.3);border-radius:10px;padding:6px 10px;margin-bottom:4px;font-size:13px;display:flex;align-items:center;gap:6px;"><span style="font-weight:700;color:#E67E22;">${idx+1}.</span><span>${correctOpt.emoji} ${correctOpt.label}</span><span style="color:#27AE60;font-weight:600;margin-left:auto;">✅</span></div>`;
+            });
+            document.getElementById('questionArea5').innerHTML = html;
+            document.getElementById('btnNextLevel5').classList.add('show');
+            document.getElementById('startLevel5Btn').disabled = true;
+            showFeedback('📖', '正确答案揭晓', '记住：果汁/方糖急救，15分钟复测，意识不清打120！', 'info');
+            feedbackCallback = function() {};
+        }
+
+        function resetLevel5() {
+            level5Running = false;
+            level5Completed = false;
+            isRevealed5 = false;
+            currentQIndex5 = 0;
+            correctCount5 = 0;
+            errorCount5 = 0;
+            questionResults5 = [];
+            isAnswering5 = false;
+            isWaitingForFeedback5 = false;
+            feedbackCallback = null;
+            document.getElementById('startLevel5Btn').disabled = false;
+            document.getElementById('btnNextLevel5').classList.remove('show');
+            updateChanceDisplay5();
+            const q = QUESTIONS5[0];
+            let html = `<div class="q-text">${q.question}</div><div class="options-grid">`;
+            q.options.forEach((opt, idx) => {
+                html +=
+                    `<div class="option-item disabled"><span class="opt-emoji">${opt.emoji}</span><span class="opt-label">${opt.label}</span></div>`;
+            });
+            html += `</div>`;
+            document.getElementById('questionArea5').innerHTML = html;
+            document.getElementById('currentQNum').textContent = '1';
+            hideFeedback();
+            hideToast();
+        }
+
+        function startLevel5() {
+            if (level5Running) return;
+            errorCount5 = 0;
+            correctCount5 = 0;
+            currentQIndex5 = 0;
+            questionResults5 = [];
+            level5Running = true;
+            level5Completed = false;
+            isRevealed5 = false;
+            isAnswering5 = false;
+            isWaitingForFeedback5 = false;
+            feedbackCallback = null;
+            document.getElementById('chanceNum5').textContent = '3';
+            document.getElementById('chanceNum5').className = 'num';
+            document.getElementById('btnNextLevel5').classList.remove('show');
+            document.getElementById('startLevel5Btn').disabled = true;
+            renderQuestion5();
+        }
+
+        // ================================================================
+        // 结算页（统一：已掌握 + 5星）
+        // ================================================================
+        const LEVEL_NAMES = ['第1关 · 进餐排序', '第2关 · 大火收汁', '第3关 · 零食大侦探', '第4关 · 手掌配餐', '第5关 · 低血糖救援'];
+
+        function renderSettlement() {
+            const levelArray = [LEVEL_STATUS.l1, LEVEL_STATUS.l2, LEVEL_STATUS.l3, LEVEL_STATUS.l4, LEVEL_STATUS.l5];
+            const passedCount = levelArray.filter(v => v === true).length;
+
+            // 统一显示：🏆 + 5星 + 控糖达人
+            document.getElementById('medalEmoji').textContent = '🏆';
+            document.getElementById('starsDisplay').textContent = '⭐⭐⭐⭐⭐';
+            document.getElementById('titleName').textContent = '控糖达人';
+            document.getElementById('totalPassed').textContent = passedCount;
+            document.getElementById('commentText').innerHTML = '继续加油，掌握更多控糖知识！';
+
+            const list = document.getElementById('levelList');
+            list.innerHTML = '';
+            LEVEL_NAMES.forEach((name, idx) => {
+                const isPass = levelArray[idx] || false;
+                const div = document.createElement('div');
+                div.className = 'level-item';
+                div.innerHTML = `
+                    <div class="level-left">
+                        <span class="level-num">${idx + 1}.</span>
+                        <span class="level-name">${name}</span>
+                    </div>
+                    <span class="level-status">${isPass ? '✔ 已掌握' : '⬜ 未掌握'}</span>
+                `;
+                list.appendChild(div);
+            });
+
+            if (passedCount === 5) playBeep('correct');
+        }
+
+        function shareResult() {
+            const levelArray = [LEVEL_STATUS.l1, LEVEL_STATUS.l2, LEVEL_STATUS.l3, LEVEL_STATUS.l4, LEVEL_STATUS.l5];
+            const passedCount = levelArray.filter(v => v === true).length;
+            if (navigator.share) {
+                navigator.share({
+                    title: '🍚 糖友餐厅 · 我的控糖成绩单',
+                    text: `我完成了 ${passedCount}/5 关，获得「控糖达人」称号！⭐ 快来测测你的控糖段位吧！`,
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                showToast('📤', '分享', '点击右上角菜单选择"分享"或"发送给朋友"', 'info');
+            }
+        }
+
+        function resetGame() {
+            if (confirm('确定要重新开始吗？所有闯关进度将重置。')) {
+                LEVEL_STATUS.l1 = false;
+                LEVEL_STATUS.l2 = false;
+                LEVEL_STATUS.l3 = false;
+                LEVEL_STATUS.l4 = false;
+                LEVEL_STATUS.l5 = false;
+                saveLevelStatus();
+                resetLevel1();
+                resetLevel2();
+                resetLevel3();
+                resetLevel4();
+                resetLevel5();
+                renderSettlement();
+                goToPage('p1');
+                showToast('🔄', '已重置', '所有关卡进度已重置，重新开始挑战吧！', 'info');
+            }
+        }
+
+        // ================================================================
+        // 速记小贴士
+        // ================================================================
+        const TIPS_CARDS = [{
+            id: 1,
+            emoji: '🥣',
+            title: '进餐排序',
+            slogan: '汤→菜→肉→饭，血糖稳一半',
+            points: [
+                '🥣 先喝汤 → 增加饱腹感，减少主食摄入',
+                '🥬 再吃蔬菜 → 膳食纤维铺底，延缓糖分吸收',
+                '🍗 然后吃肉 → 蛋白质增加饱腹感，平稳血糖',
+                '🍚 最后吃主食 → 自然减少摄入量，餐后血糖更平稳'
+            ]
+        }, {
+            id: 2,
+            emoji: '🔥',
+            title: '烹饪方式',
+            slogan: '蒸灼炖炒，选对更健康',
+            points: [
+                '♨️ 蒸 → 保留营养，无油低脂，适合鱼、蛋',
+                '🫧 白灼 → 清爽不油腻，适合青菜',
+                '🍳 炒 → 快火少油，适合青菜、鸡蛋',
+                '🥘 炖 → 软烂入味，适合肉类，少加糖和酱油'
+            ]
+        }, {
+            id: 3,
+            emoji: '🍬',
+            title: '零食加餐',
+            slogan: '加餐选天然，血糖不犯难',
+            points: [
+                '✅ 无糖酸奶 → 蛋白质+钙，饱腹又营养',
+                '✅ 黄瓜 → 水分足、热量低、几乎不升糖',
+                '✅ 苹果 → GI值36，果胶丰富，慢慢吃',
+                '✅ 原味核桃 → 优质脂肪酸，每天2-3颗',
+                '❌ 风味酸奶、果汁 → 含糖量高，升糖快'
+            ]
+        }, {
+            id: 4,
+            emoji: '🤚',
+            title: '手掌配餐法',
+            slogan: '一掌一拳两捧拇指，量化吃饭',
+            points: [
+                '🖐️ 一掌 → 蛋白质（肉/鱼/蛋/豆腐）',
+                '👊 一拳 → 主食（米饭/面条/杂粮）',
+                '🤲 两捧 → 蔬菜（叶菜/瓜类，多多益善）',
+                '👍 一拇指 → 油脂（植物油/坚果，控制量）'
+            ]
+        }, {
+            id: 5,
+            emoji: '🚨',
+            title: '低血糖救援',
+            slogan: '15克糖，等15分，意识不清打120',
+            points: [
+                '🥤 吃15克糖 → 果汁/方糖/含糖饮料（快速升糖）',
+                '⏱️ 等15分钟 → 糖分吸收起效的标准时间',
+                '📊 复测血糖 → 仍低于3.9再吃一份',
+                '🚑 意识不清 → 绝对不能喂食！立即拨打120！'
+            ]
+        }];
+
+        let tipsCurrentIndex = 0;
+
+        function renderTipsCards() {
+            const container = document.getElementById('cardContainerTips');
+            container.innerHTML = '';
+            TIPS_CARDS.forEach((card, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-wrapper';
+                if (idx === tipsCurrentIndex) wrapper.classList.add('active');
+                wrapper.dataset.index = idx;
+                const pointsHTML = card.points.map(p =>
+                    `<li><span class="check">✓</span> ${p}</li>`
+                ).join('');
+                wrapper.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-number">${card.id}</div>
+                            <div class="card-title"><span class="emoji">${card.emoji}</span>${card.title}</div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="card-section">
+                            <div class="section-label">📌 口诀</div>
+                            <div class="section-content">${card.slogan}</div>
+                        </div>
+                        <div class="card-section" style="flex:1;">
+                            <div class="section-label">💡 糖友知识点</div>
+                            <ul class="point-list">${pointsHTML}</ul>
+                        </div>
+                        <div class="card-footer">${card.id} / ${TIPS_CARDS.length}</div>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+            updateTipsDots();
+            updateTipsArrows();
+        }
+
+        function updateTipsDots() {
+            const container = document.getElementById('dotsContainerTips');
+            container.innerHTML = '';
+            TIPS_CARDS.forEach((_, idx) => {
+                const dot = document.createElement('span');
+                dot.className = 'dot' + (idx === tipsCurrentIndex ? ' active' : '');
+                container.appendChild(dot);
+            });
+        }
+
+        function updateTipsArrows() {
+            document.getElementById('prevArrowTips').classList.toggle('disabled', tipsCurrentIndex === 0);
+            document.getElementById('nextArrowTips').classList.toggle('disabled', tipsCurrentIndex === TIPS_CARDS.length - 1);
+        }
+
+        function goToTipsCard(index) {
+            if (index < 0 || index >= TIPS_CARDS.length || index === tipsCurrentIndex) return;
+            const wrappers = document.querySelectorAll('#cardContainerTips .card-wrapper');
+            wrappers.forEach(w => w.classList.remove('active', 'prev', 'next'));
+            const direction = index > tipsCurrentIndex ? 'next' : 'prev';
+            wrappers[tipsCurrentIndex].classList.add(direction === 'next' ? 'prev' : 'next');
+            wrappers[index].classList.add('active');
+            tipsCurrentIndex = index;
+            setTimeout(() => {
+                wrappers.forEach(w => {
+                    w.classList.remove('prev', 'next');
+                    if (parseInt(w.dataset.index) === tipsCurrentIndex) w.classList.add('active');
+                    else w.classList.remove('active');
+                });
+                updateTipsDots();
+                updateTipsArrows();
+            }, 400);
+        }
+
+        function prevCardTips() { if (tipsCurrentIndex > 0) goToTipsCard(tipsCurrentIndex - 1); }
+
+        function nextCardTips() { if (tipsCurrentIndex < TIPS_CARDS.length - 1) goToTipsCard(tipsCurrentIndex + 1); }
+
+        function shareTips() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '📖 糖友速记小贴士',
+                    text: '控糖知识速记卡片：进餐排序、烹饪方式、零食加餐、手掌配餐、低血糖救援——糖友必收藏！',
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                showToast('📤', '分享', '点击右上角菜单选择"分享"或"发送给朋友"', 'info');
+            }
+        }
+
+        let tipsTouchStartX = 0;
+        const tipsContainer = document.getElementById('cardContainerTips');
+        if (tipsContainer) {
+            tipsContainer.addEventListener('touchstart', function(e) {
+                tipsTouchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+            tipsContainer.addEventListener('touchend', function(e) {
+                const diff = tipsTouchStartX - e.changedTouches[0].screenX;
+                if (Math.abs(diff) > 40) {
+                    if (diff > 0) nextCardTips();
+                    else prevCardTips();
+                }
+            }, { passive: true });
+        }
+
+        // ================================================================
+        // 初始化
+        // ================================================================
+        resetLevel1();
+        resetLevel2();
+        resetLevel3();
+        resetLevel4();
+        resetLevel5();
+        renderTipsCards();
+        renderSettlement();
+
+        document.getElementById('musicBtn').textContent = '🔊';
+
+        document.addEventListener('click', function() { if (!musicActivated) activateMusic(); }, { once: true });
+        document.addEventListener('touchstart', function() { if (!musicActivated) activateMusic(); }, { once: true });
+
+        setTimeout(() => {
+            if (!musicActivated) {
+                const ctx = initAudio();
+                if (ctx && ctx.state === 'suspended') {
+                    ctx.resume().then(() => { musicActivated = true;
+                        startMusic(); }).catch(() => {});
+                }
+            }
+        }, 3000);
+
+        console.log('🍚 糖友餐厅 · 完整版已加载（已移除语音播报）');
+        console.log('📊 关卡状态:', LEVEL_STATUS);
+    </script>
+</body>
+</html>
